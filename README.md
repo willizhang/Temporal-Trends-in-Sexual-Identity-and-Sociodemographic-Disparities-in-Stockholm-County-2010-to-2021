@@ -1,0 +1,1 @@
+# Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021
