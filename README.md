@@ -1,6 +1,6 @@
 ### This repository contains the R scripts for:
 
-Guoqiang Zhang, Per Tynelius, Maya B. Mathur, Matteo Quartagno, Gunnar Brandén, Fredrik Liljeros, Kyriaki Kosidou. *Temporal Trends in Sexual Identity and Sociodemographic Disparities in Stockholm County, 2010 to 2021.** 2024. _In Manuscript._
+Guoqiang Zhang, Per Tynelius, Maya B. Mathur, Matteo Quartagno, Gunnar Brandén, Fredrik Liljeros, Kyriaki Kosidou. **Temporal Trends in Sexual Identity and Sociodemographic Disparities in Stockholm County, 2010 to 2021.** 2024. _In Manuscript._
 
 The R scripts include:
 * **SPHC-B-2010.Rmd:** analyses of sexual identity using SPHC-B 2010 dataset.
@@ -21,7 +21,7 @@ The R scripts include:
 <br>
 
 **Data Availability**<br>
-The dataset used in these analyses is available upon request. Interested investigators can access the data by submitting an application due to privacy and ethical considerations. For more information on the application process, please refer to the [Stockholm Public Health Cohort's data access guidelines](https://www.ces.regionstockholm.se/projekt-och-uppdrag/halsa-stockholm/SPHC-data/).
+The datasets generated and/or analyzed during the current study are not publicly available due to privacy and ethical reasons, but can be accessed after approved ethics application to the Steering Committee of the [Stockholm Public Health Cohort](https://www.ces.regionstockholm.se/projekt-och-uppdrag/halsa-stockholm/SPHC-data/).
 
 **Contact**<br>
 For any queries related to this repository, please contact: [Guoqiang Zhang](https://ki.se/en/people/guoqiang-zhang), Email: guoqiang.zhang@ki.se.
