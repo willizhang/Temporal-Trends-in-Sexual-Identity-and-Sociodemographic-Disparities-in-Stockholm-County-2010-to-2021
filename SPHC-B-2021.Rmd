@@ -1,0 +1,2751 @@
+---
+title: "Self-reported sexual identity in Stockholm County in 2021"
+author: Guoqiang Zhang, Maya Mathur, Matteo Quartagno
+email: guoqiang.zhang@ki.se
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+### 1. Load Packages
+```{r}
+library(haven)
+library(tidyr)
+library(tidyverse)
+library(dplyr)
+library(finalfit)
+library(ggplot2)
+library(naniar)
+library(jomo)
+library(mitml)
+library(mitools)
+library(survey)
+library(svyVGAM)
+library(vcd)
+library(rcompanion)
+source("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/Helper_functions.R") # helper function
+```
+
+### 2. Import and Prepare Data
+```{r}
+load("/Volumes/LGBT Project data/d_2021.RData")
+
+# sampling strata
+n_miss( d_2021$stratum )
+d_2021$sampling_strata <- as.factor( d_2021$stratum )
+length( unique( d_2021$sampling_strata ) ) # 38 strata
+
+d_2021 <- d_2021 %>%
+  mutate( sampling_strata_region = recode( sampling_strata, 
+                                           `114` = "Upplands-Väsby",
+                                           `115` = "Vallentuna",
+                                           `117` = "Österåker",
+                                           `120` = "Värmdö",
+                                           `123` = "Järfälla",
+                                           `125` = "Ekerö",
+                                           `126` = "Huddinge",
+                                           `127` = "Botkyrka",
+                                           `128` = "Salem",
+                                           `136` = "Haninge",
+                                           `138` = "Tyresö",
+                                           `139` = "Upplands-Bro",
+                                           `140` = "Nykvarn",
+                                           `160` = "Täby",
+                                           `162` = "Danderyd",
+                                           `163` = "Sollentuna",
+                                           `181` = "Södertälje",
+                                           `182` = "Nacka",
+                                           `183` = "Sundbyberg",
+                                           `184` = "Solna",
+                                           `186` = "Lidingö",
+                                           `187` = "Vaxholm",
+                                           `188` = "Norrtälje",
+                                           `191` = "Sigtuna",
+                                           `192` = "Nynäshamn",
+                                           `180103` = "Spånga-Tensta",
+                                           `180104` = "Hässelby-Vällingby",
+                                           `180106` = "Bromma",
+                                           `180108` = "Kungsholmen",
+                                           `180109` = "Norrmalm",
+                                           `180110` = "Östermalm",
+                                           `180115` = "Skarpnäck",
+                                           `180118` = "Farsta",
+                                           `180124` = "Skärholmen",
+                                           `180125` = "Rinkeby-Kista",
+                                           `180127` = "Södermalm",
+                                           `180128` = "Enskede-Årsta-Vantör",
+                                           `180129` = "Hägersten-Älvsjö"
+                                           ) )
+
+# sexual identity
+table( d_2021$F21F45_Q57, useNA = "always" )
+d_2021$sexual_identity_2021 <- factor( ifelse( d_2021$F21F45_Q57 == 1, "Heterosexual", 
+                                          ifelse( d_2021$F21F45_Q57 == 2, "Homosexual",
+                                                  ifelse( d_2021$F21F45_Q57 == 3, "Bisexual", "None of the above" ) ) ),
+                                  levels = c( "Heterosexual", "Homosexual", "Bisexual", "None of the above" ) )
+table( d_2021$sexual_identity_2021, useNA = "always" )
+
+# sex
+table( d_2021$kon, useNA = "always" )
+d_2021$sex <- factor( ifelse( d_2021$kon == 1, "Male", "Female" ), 
+                      levels = c( "Male", "Female" ) )
+table( d_2021$sex, useNA = "always" )
+
+# age
+summary( d_2021$F21alder )
+d_2021$age <- d_2021$F21alder
+d_2021$age_cat <- factor( ifelse( d_2021$age <= 29, "16-29", 
+                                  ifelse( d_2021$age >=30 & d_2021$age <= 44, "30-44",
+                                          ifelse( d_2021$age >= 45 & d_2021$age <= 59, "45-59", ">=60" ) ) ),
+                          levels = c( "16-29", "30-44", "45-59", ">=60" ) )
+table( d_2021$age_cat, useNA = "always" )
+
+# interaction term between age and sex
+d_2021$age_sex <- interaction( d_2021$age_cat, d_2021$sex )
+
+# generation
+d_2021$birth_year <- 2021 - d_2021$age
+d_2021 <- d_2021 %>%
+  mutate( generation = case_when(
+    birth_year >= 1997 & birth_year <= 2012 ~ "Generation Z (1997–2012)",
+    birth_year >= 1981 & birth_year <= 1996 ~ "Millennials (1981–1996)",
+    birth_year >= 1965 & birth_year <= 1980 ~ "Generation X (1965–1980)",
+    birth_year >= 1946 & birth_year <= 1964 ~ "Baby Boomers (1946–1964)",
+    birth_year >= 1928 & birth_year <= 1945 ~ "Silent Generation (1928–1945)",
+    birth_year >= 1901 & birth_year <= 1927 ~ "Greatest Generation (1901–1927)"
+  ) )
+
+d_2021$generation <- factor( 
+  d_2021$generation, 
+  levels = c( "Generation Z (1997–2012)", "Millennials (1981–1996)", "Generation X (1965–1980)", "Baby Boomers (1946–1964)", "Silent Generation (1928–1945)", "Greatest Generation (1901–1927)" ) )
+summary( d_2021$generation )
+
+# interaction term between generation and sex
+d_2021$generation_sex <- interaction( d_2021$generation, d_2021$sex )
+
+# country of birth
+table( d_2021$fodelseland, useNA = "always" )
+d_2021$country_of_birth <- factor( ifelse( d_2021$fodelseland == "Afrika", "Africa",
+                                           ifelse( d_2021$fodelseland == "Asien", "Asia",
+                                                   ifelse( d_2021$fodelseland == "Europa", "Europe",
+                                                           ifelse( d_2021$fodelseland == "Sverige", "Sweden", "Americas" ) ) ) ),
+                                   levels = c( "Africa", "Americas", "Asia", "Europe", "Sweden" ) )
+table( d_2021$country_of_birth, useNA = "always" )
+
+# education
+table( d_2021$utbniva2021, useNA = "always" )
+d_2021$education <- factor( ifelse( d_2021$utbniva2021 <= 2, "<=9 years",
+                                    ifelse( d_2021$utbniva2021 <= 4, "10-12 years", ">=13 years" ) ),
+                            levels = c( "<=9 years", "10-12 years", ">=13 years" ) )
+table( d_2021$education, useNA = "always" )
+
+# disposable income
+summary( d_2021$dispink2021, useNA = "always" )
+d_2021$dispink2021[ d_2021$dispink2021 < 0 ] <- NA
+d_2021$income <- factor( ifelse( d_2021$dispink2021 <= 2500, "<=2,500",
+                                 ifelse( d_2021$dispink2021 > 2500 & d_2021$dispink2021 <= 3500, "(2,500, 3,500]",
+                                         ifelse( d_2021$dispink2021 > 3500 & d_2021$dispink2021 <= 4500, "(3,500, 4,500]", ">4,500" ) ) ),
+                         levels = c( "<=2,500", "(2,500, 3,500]", "(3,500, 4,500]", ">4,500" ) )
+table( d_2021$income, useNA = "always" )
+
+# marital status
+table( d_2021$civil2021, useNA = "always" )
+d_2021$marital_status <- factor( ifelse( d_2021$civil2021 == "G" | d_2021$civil2021 == "RP", "Currently married",
+                                         ifelse( d_2021$civil2021 == "OG", "Never married", "Other" ) ), 
+                                 levels = c( "Never married", "Currently married", "Other" ) )
+table( d_2021$marital_status, useNA = "always" )
+
+# occupation
+table( d_2021$SSYK_kl, useNA = "always" )
+d_2021$occupation <- factor(
+  ifelse(
+    d_2021$SSYK_kl == "Yrken inom byggverksamhet och tillverkning" |
+      d_2021$SSYK_kl == "Yrken inom lantbruk, trädgård, skogsbruk och fiske" |
+      d_2021$SSYK_kl == "Yrken inom maskinell tillverkning och transport m.m.",
+    "Manual and field trades",
+    ifelse(
+      d_2021$SSYK_kl == "Service-, omsorgs- och försäljningsyrken" |
+        d_2021$SSYK_kl == "Yrken inom administration och kundtjänst" |
+        d_2021$SSYK_kl == "Yrken med krav på kortare utbildning eller introduktion",
+      "Service and support",
+      ifelse(
+        d_2021$SSYK_kl == "Yrken med krav på fördjupad högskolekompetens" |
+          d_2021$SSYK_kl == "Yrken med krav på högskolekompetens eller motsvarande" |
+          d_2021$SSYK_kl == "Chefsyrken",
+        "Expertise and leadership",
+        NA
+      )
+    )
+  ),
+  levels = c(
+    "Manual and field trades",
+    "Service and support",
+    "Expertise and leadership"
+  )
+)
+table( d_2021$occupation, useNA = "always" )
+
+
+##### demographic characteristics #####
+
+# among respondents (n = 23,066)
+# make characteristics table by sexual identity
+explanatory =  c( "sex", "age_cat", "country_of_birth", "education", "occupation", "income", "marital_status" )
+dependent = "sexual_identity_2021"
+
+d_2021_table <- d_2021 %>% 
+  summary_factorlist( dependent,
+                      explanatory, 
+                      na_include = TRUE,
+                      na_include_dependent = TRUE, 
+                      total_col = TRUE,
+                      add_col_totals = TRUE,
+                      column = FALSE )
+
+# Fisher's test
+x1 <- table( d_2021$sex, d_2021$sexual_identity_2021 )
+x1
+format( round( fisher.test( x1[, c( 1:2 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x1[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x1[, c( 1, 4 ) ] )$p.value, 3 ), nsmall = 3 )
+
+x2 <- table( d_2021$age_cat, d_2021$sexual_identity_2021 )
+x2
+format( round( fisher.test( x2[, c( 1:2 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x2[, c( 1, 3 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x2[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+x3 <- table( d_2021$country_of_birth, d_2021$sexual_identity_2021 )
+x3
+format( round( fisher.test( x3[, c( 1:2 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x3[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x3[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+x4 <- table( d_2021$education, d_2021$sexual_identity_2021 )
+x4
+format( round( fisher.test( x4[, c( 1:2 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x4[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x4[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+x5 <- table( d_2021$income, d_2021$sexual_identity_2021 )
+x5
+format( round( fisher.test( x5[, c( 1:2 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x5[, c( 1, 3 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x5[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+x6 <- table( d_2021$marital_status, d_2021$sexual_identity_2021 )
+x6
+format( round( fisher.test( x6[, c( 1:2 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x6[, c( 1, 3 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x6[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+x7 <- table( d_2021$occupation, d_2021$sexual_identity_2021 )
+x7
+format( round( fisher.test( x7[, c( 1:2 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x7[, c( 1, 3 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x7[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+
+##### design weights #####
+
+summary( d_2021$F21dvikt )
+d_2021$design_weight <- d_2021$F21dvikt
+
+
+##### calibrated weights #####
+d_2021$calibrated_weight <- d_2021$F21kalvikt
+
+
+##### non-response #####
+
+# unit non-response
+d_2021$design_weight_unit_nonresponse <- d_2021$F21dbvikt # weights calculated assuming Missing Completely At Random (MCAR) within each stratum
+summary( d_2021$design_weight_unit_nonresponse )
+sum( d_2021$design_weight_unit_nonresponse ) # No. of source population = 1,827,424
+
+unitresponse_prob <- d_2021 %>% 
+  group_by( sampling_strata_region ) %>% 
+  summarise( unitresponse_prob = unique( design_weight ) / unique( design_weight_unit_nonresponse ),
+             no.of.population = sum( design_weight_unit_nonresponse ),
+             sample_size = unique( no.of.population )/unique( design_weight ) ) # calculate overall unit response rate, and no. of population and sample size within each stratum
+
+d_2021 <- d_2021 %>% 
+  left_join( unitresponse_prob, by = "sampling_strata_region" )
+
+# item non-response
+itemresponse_prob <- d_2021 %>% 
+  group_by( sampling_strata_region ) %>% 
+  summarise( itemresponse_prob = sum( !is.na( sexual_identity_2021 ) ) / n() ) # calculate item response rate
+
+d_2021 <- d_2021 %>% 
+  left_join( itemresponse_prob, by = "sampling_strata_region" ) %>% 
+  mutate( itemresponse_prob = ifelse( is.na( sexual_identity_2021 ), 0, itemresponse_prob ) )
+
+
+##### summary of stratified sampling #####
+
+sampling_frame_2021 <- as.data.frame( d_2021 %>% 
+                                   group_by( sampling_strata_region ) %>% 
+                                   reframe( no.of.population = unique( no.of.population ), 
+                                            sample_size = unique( no.of.population/design_weight ),
+                                            unitresponse = n(),
+                                            itemresponse = sum( itemresponse_prob != 0 ) ) )
+
+sampling_frame_2021$unitresponse_rate <- sampling_frame_2021$unitresponse/sampling_frame_2021$sample_size
+sampling_frame_2021$itemresponse_rate <- sampling_frame_2021$itemresponse/sampling_frame_2021$unitresponse
+sampling_frame_2021$overallresponse_rate <- sampling_frame_2021$itemresponse/sampling_frame_2021$sample_size
+
+sampling_frame_2021$unitresponse_label <- paste0( sampling_frame_2021$unitresponse, " (", 
+                                             sprintf( "%.1f", sampling_frame_2021$unitresponse_rate*100 ), "%)" )
+sampling_frame_2021$overallresponse_label <- paste0( sampling_frame_2021$itemresponse, " (", 
+                                                sprintf( "%.1f", sampling_frame_2021$overallresponse_rate*100 ), "%)" )
+
+round( sum( sampling_frame_2021$unitresponse )/( sum( sampling_frame_2021$sample_size ) ), 3 ) # overall unit response rate
+round( sum( sampling_frame_2021$itemresponse )/( sum( sampling_frame_2021$unitresponse ) ), 3 ) # overall item response rate
+round( sum( sampling_frame_2021$itemresponse )/( sum( sampling_frame_2021$sample_size ) ), 3 ) # overall response rate
+
+writexl::write_xlsx( sampling_frame_2021, "sampling_frame_2021.xlsx" )
+
+
+##### replicating non-respondent rows for sampling design #####
+
+# because d_2021 includes data only for respondents (unit response), we need to duplicate rows for non-respondents
+# so that the final dataset represents the sampling process
+rows_to_add <- d_2021 %>%
+  group_by( sampling_strata_region ) %>%
+  summarise( to_add = unique( sample_size ) - n(),
+             no.of.population = unique( no.of.population ),
+             sample_size = unique( sample_size ),
+             design_weight = unique( design_weight ) )
+
+sum( rows_to_add$to_add ) # 24,819 non-respondents
+
+rows_to_add$to_add <- round( rows_to_add$to_add ) # to resolve floating-point precision issues
+
+replicated_rows <- rows_to_add[ rep( row.names( rows_to_add ), rows_to_add$to_add ), c( 1, 3:5 ) ]
+
+d_2021_complete <- bind_rows( d_2021, replicated_rows ) # 47,885 individuals in the original sample
+```
+
+### 3. Check Calibrated Weights and Proxy Auxiliary Variables
+```{r}
+survey_design_calibrated <- svydesign( ids = ~ 1, 
+                                       strata = ~ sampling_strata_region,
+                                       weights = ~ calibrated_weight,
+                                       fpc = ~ no.of.population,
+                                       data = d_2021 )
+
+# we were unable to re-calibrate the weights as recommended (https://cran.r-project.org/web/packages/survey/vignettes/precalibrated.pdf), because the original auxiliary variables used for calibration were not available anymore
+
+svytable( ~ sampling_strata_region, survey_design_calibrated ) # calculate population totals for each sampling stratum
+
+round( summary( d_2021$calibrated_weight ), 2 ) # check the distribution of calibrated weights
+round( summary( d_2021$calibrated_weight / d_2021$design_weight ), 2 ) # check the ratios of weights
+
+ggplot( d_2021, aes( x = calibrated_weight ) ) +
+  geom_histogram( binwidth = 1, fill = "steelblue", color = "steelblue" ) +
+  theme_classic() +
+  scale_x_continuous( breaks = c( 0, 100, 200, 300 ), 
+                      expand = c( 0.005, 0 ) ) +
+  scale_y_continuous( limits = c( 0, 360 ),
+                      breaks = c( 0, 100, 200, 300 ), 
+                      expand = c( 0, 0 ) ) +
+  labs( x = "Calibrated Weights", y = "Frequency" ) +
+  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.title.x = element_text( family = "Arial", size = 11 )
+         )
+
+# calculate strength of correlation between sexual identity in 2021 and proxy auxiliary variables
+d_2021_correlation <- d_2021 %>% 
+  rename( country_of_birth_auxiliary = fodelseland2 ) %>%
+  mutate( 
+   age_auxiliary = factor( 
+      case_when(
+        age <= 29 ~ "<=29",
+        age >=30 & age <= 44 ~ "30-44",
+        age >=45 & age <= 64 ~ "45-64",
+        age >=65 & age <= 79 ~ "65-79",
+        age >= 80 ~ ">=80" ),
+      levels = c( "<=29", "30-44", "45-64", "65-79", ">=80" ) ),
+   sex_auxiliary = sex,
+   country_of_birth_auxiliary = as.factor( country_of_birth_auxiliary ),
+   marital_status_auxiliary = as.factor(
+     ifelse( marital_status == "Currently married", 
+             "Currently married", 
+             "Other" ) ),
+   education_auxiliary = education,
+   sampling_strata_region_auxiliary = sampling_strata_region
+   )
+  
+summary( d_2021_correlation )
+
+assocstats( table( d_2021_correlation$sexual_identity_2021, d_2021_correlation$sex_auxiliary ) )
+assocstats( table( d_2021_correlation$sexual_identity_2021, d_2021_correlation$country_of_birth_auxiliary ) )
+assocstats( table( d_2021_correlation$sexual_identity_2021, d_2021_correlation$marital_status_auxiliary ) )
+assocstats( table( d_2021_correlation$sexual_identity_2021, d_2021_correlation$sampling_strata_region_auxiliary ) )
+
+freemanTheta( table( d_2021_correlation$sexual_identity_2021, d_2021_correlation$age_auxiliary ), group = "row", digits = 2 )
+
+freemanTheta( table( d_2021_correlation[ d_2021_correlation$sex == "Male", ]$sexual_identity_2021, d_2021_correlation[ d_2021_correlation$sex == "Male", ]$age_auxiliary ), group = "row", digits = 2 )
+
+freemanTheta( table( d_2021_correlation[ d_2021_correlation$sex == "Female", ]$sexual_identity_2021, d_2021_correlation[ d_2021_correlation$sex == "Female", ]$age_auxiliary ), group = "row", digits = 2 )
+
+freemanTheta( table( d_2021_correlation$sexual_identity_2021, d_2021_correlation$education_auxiliary ), group = "row", digits = 2 )
+
+# references
+freemanTheta( table( d_2021_correlation$age_auxiliary, d_2021_correlation$education_auxiliary ), group = "row", digits = 2 )
+freemanTheta( table( d_2021_correlation$age_auxiliary, d_2021_correlation$income ), group = "row", digits = 2 )
+freemanTheta( table( d_2021_correlation$education_auxiliary, d_2021_correlation$income ), group = "row", digits = 2 )
+```
+
+### 4. Multiple Imputation
+#### 4.1. Obtain incomplete dataset
+```{r}
+summary( d_2021 )
+
+selected_variables <- c( "sampling_strata_region", "calibrated_weight", "no.of.population", "sexual_identity_2021", "age", "sex", "country_of_birth", "education", "dispink2021", "marital_status" )
+  
+d_2021_incomplete <- d_2021 %>% 
+  select( all_of( selected_variables ) ) %>%
+  rename( income = dispink2021 ) %>%
+  mutate( 
+    country_of_birth = factor( 
+      case_when(
+        country_of_birth == "Africa" | country_of_birth == "Americas" | country_of_birth == "Asia" ~ "Outside Europe",
+        country_of_birth == "Sweden" ~ "Sweden",
+        country_of_birth == "Europe" ~ "Europe" ),
+      levels = c( "Sweden", "Europe", "Outside Europe" ) )
+    )
+
+# create weight strata (n = 25) for two-level multivariate normal imputation
+d_2021_incomplete$weight_strata <- as.factor( cut( d_2021_incomplete$calibrated_weight,
+                                                   breaks = quantile( d_2021_incomplete$calibrated_weight, 
+                                                                      probs = seq( 0, 1, length.out = 26 ) ),
+                                                   labels = 1:25,
+                                                   include.lowest = TRUE,
+                                                   right = TRUE ) )
+
+ggplot( d_2021_incomplete %>% 
+          group_by( weight_strata ) %>% 
+          summarise( mean_weight = mean( calibrated_weight ), sd_weight = sd( calibrated_weight ) ),
+        aes( y = reorder( weight_strata, -mean_weight ), x = mean_weight ) ) +
+  geom_line( aes( group = 1 ) ) +
+  geom_point() +
+  geom_errorbarh( aes( xmin = mean_weight - sd_weight, xmax = mean_weight + sd_weight ), height = 0.4, alpha = 0.5 ) +
+  scale_x_continuous( limits = c( 0, 260 ), 
+                      breaks = c( 0, 50, 100, 150, 200, 250 ), 
+                      expand = c( 0, 0 ) ) +
+  labs( y = "Calibrated Weight Strata", x = "Mean and Standard Deviation of Calibrated Weights" ) +
+  theme_classic() +
+  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.title.x = element_text( family = "Arial", size = 11 )
+         )
+
+summary( d_2021_incomplete )
+sapply( d_2021_incomplete, class ) # all continuous variables are numeric, and all categorical variables are factor
+save( d_2021_incomplete, file = "/Volumes/LGBT Project data/Multiple Imputation/d_2021_incomplete.RData" )
+```
+
+#### 4.2. Visualize missing pattern
+```{r}
+# identify missing variables
+vis_miss( d_2021_incomplete )
+n_miss( d_2021_incomplete )
+miss_var_summary( d_2021_incomplete ) # 2.2% missing in sexual_identity_2021, 2.1% in education, and 0.2% in income
+```
+
+#### 4.3. Two-level multivariate normal imputation
+```{r}
+# use multiple imputation to account for item non-response
+# assume Missing At Random (MAR)
+
+# specify imputation model
+fml_imp_2021 <- sexual_identity_2021 + education + income ~ 1 + age*sex + country_of_birth + marital_status + ( 1 | weight_strata )
+
+# perform a "dry run"
+imp_ini_2021 <- jomoImpute( data = d_2021_incomplete, # incomplete dataset
+                            formula = fml_imp_2021, # imputation model
+                            random.L1 = "full", # random covariance matrix of residuals
+                            n.burn = 2, # number of burn-in iterations
+                            n.iter = 10, # number of between-imputation iterations
+                            m = 2, # number of imputation
+                            seed = 12345 # set the seed so that results can be reproduced
+                            )
+
+summary( imp_ini_2021 ) # check output
+
+
+# increase the number of burn-in and between-imputation iterations
+# to determine the number of iterations for the final imputation
+imp_preliminary_2021 <- jomoImpute( data = d_2021_incomplete,
+                                    formula = fml_imp_2021,
+                                    random.L1 = "full",
+                                    n.burn = 5000,
+                                    n.iter = 1000,
+                                    m = 2,
+                                    seed = 12345
+                                    ) # took around 30 minutes
+
+save( imp_preliminary_2021, file = "/Volumes/LGBT Project data/Multiple Imputation/imp_preliminary_2021.RData" )
+summary( imp_preliminary_2021 ) # summarize model and display convergence statistics
+plot( imp_preliminary_2021, trace = "all", print = "beta" ) # check trace and autocorrelation plots
+
+
+# final imputation with the chosen number of iterations
+imp_final_2021 <- jomoImpute( data = d_2021_incomplete,
+                              formula = fml_imp_2021,
+                              random.L1 = "full",
+                              n.burn = 2000,
+                              n.iter = 1000,
+                              m = 20,
+                              seed = 12345
+                              ) # took around 1 hour and a half
+
+save( imp_final_2021, file = "/Volumes/LGBT Project data/Multiple Imputation/imp_final_2021.RData" )
+summary( imp_final_2021 )
+plot( imp_final_2021, trace = "all", print = "beta" )
+```
+
+#### 4.4. Validate imputed data
+```{r}
+# extract imputed datasets
+original_data_2021 <- mitmlComplete( imp_final_2021, print = 0 ) # extract original incomplete dataset
+implist_2021 <- mitmlComplete( imp_final_2021, print = "all" ) # extract all imputed datasets
+
+original_data_2021$imputation <- "0"
+all_data_2021 <- bind_rows( original_data_2021,
+                            bind_rows( implist_2021, .id = "imputation" ) ) # merge datasets
+all_data_2021$imputation <- as.numeric( all_data_2021$imputation )
+summary( all_data_2021 )
+
+# sexual identity in 2021
+ggplot( all_data_2021[ !is.na( all_data_2021$sexual_identity_2021 ), ],
+        aes( fill = sexual_identity_2021, x = imputation ) ) + 
+  geom_bar( position = "fill" ) + 
+  scale_y_continuous( labels = scales::percent ) + 
+  scale_fill_discrete( name = "Sexual identity in 2021" ) +
+  labs(
+    x = "Imputation number",
+    y = "Proportion",
+    caption = "Notes: Imputation number 0 represents the original incomplete dataset." ) +
+  theme_classic() +
+  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.title = element_text( family = "Arial", size = 10 ),
+         legend.position = "bottom",
+         plot.caption = element_text( family = "Arial", size = 10, hjust = 0 ) 
+  )
+
+# education
+ggplot( all_data_2021[ !is.na( all_data_2021$education ), ],
+        aes( fill = education, x = imputation ) ) + 
+  geom_bar( position = "fill" ) + 
+  scale_y_continuous( labels = scales::percent ) + 
+  scale_fill_discrete( name = "Level of education" ) +
+  labs(
+    x = "Imputation number",
+    y = "Proportion",
+    caption = "Notes: Imputation number 0 represents the original incomplete dataset." ) +
+  theme_classic() +
+  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.title = element_text( family = "Arial", size = 10 ),
+         legend.position = "bottom",
+         plot.caption = element_text( family = "Arial", size = 10, hjust = 0 ) 
+  )
+
+# income
+summary( all_data_2021$income )
+nrow( all_data_2021[ all_data_2021$income < 0 & !is.na( all_data_2021$income ), ] ) #  152 imputed values are negative
+```
+
+#### 4.5. Prepare for survey analyses
+```{r}
+# transform certain variables in imputed datasets
+implist_2021 <- mitmlComplete( imp_final_2021, print = "all" ) # extract all imputed datasets
+summary( implist_2021[[1]] )
+
+implist_2021_transformed <- lapply( implist_2021, function( df ) {
+  within( df, {
+    
+    # age
+    age_exp <- factor( 
+      case_when( age <= 29 ~ "16-29",
+                 age >= 30 & age <= 44 ~ "30-44",
+                 age >= 45 & age <= 59 ~ "45-59",
+                 age >= 60 ~ ">=60" ),
+      levels = c( "45-59", "16-29", "30-44", ">=60" ) )
+    age_conf <- age
+    
+    # age group
+    age_group <- cut( age,
+                      breaks = c( seq( 15, 79, by = 2 ), 100 ),
+                      include.lowest = TRUE,
+                      right = TRUE )
+    
+    # generation
+    birth_year <- 2021 - age
+    generation <- factor( 
+      case_when(
+        birth_year >= 1997 & birth_year <= 2012 ~ "Generation Z (1997–2012)",
+        birth_year >= 1981 & birth_year <= 1996 ~ "Millennials (1981–1996)",
+        birth_year >= 1965 & birth_year <= 1980 ~ "Generation X (1965–1980)",
+        birth_year >= 1946 & birth_year <= 1964 ~ "Baby Boomers (1946–1964)",
+        birth_year >= 1928 & birth_year <= 1945 ~ "Silent Generation (1928–1945)",
+        birth_year >= 1901 & birth_year <= 1927 ~ "Greatest Generation (1901–1927)" ),
+      levels = c( "Generation Z (1997–2012)", "Millennials (1981–1996)", "Generation X (1965–1980)", "Baby Boomers (1946–1964)", "Silent Generation (1928–1945)", "Greatest Generation (1901–1927)" ) 
+    )
+    
+    # sex
+    sex_exp <- sex
+    sex_conf <- sex
+    
+    # interaction term between age and sex
+    age_sex <- interaction( age_exp, sex_exp )
+    
+    # interaction term between generation and sex
+    generation_sex <- interaction( generation, sex_exp )
+    
+    # interaction term between age group and sex
+    age_group_sex <- interaction( age_group, sex_exp )
+    
+    # country of birth
+    country_of_birth_exp <- country_of_birth
+    country_of_birth_conf <- country_of_birth
+    
+    # education
+    education_exp <- relevel( education, ref = ">=13 years"  )
+    education_conf <- education
+    
+    # disposable income
+    income <- ifelse( income < 0, 0, income )
+    income_exp <- factor( 
+      case_when( income <= 2500 ~ "<=2,500",
+                 income > 2500 & income <= 3500 ~ "(2,500, 3,500]",
+                 income > 3500 & income <= 4500 ~ "(3,500, 4,500]", 
+                 income > 4500 ~ ">4,500" ),
+      levels = c( ">4,500", "<=2,500", "(2,500, 3,500]", "(3,500, 4,500]" ) )
+    income_conf <- income
+    
+    # marital status
+    marital_status_exp <- relevel( marital_status, ref = "Currently married" )
+    marital_status_conf <- marital_status
+
+    # sexual identity in 2021
+    levels( sexual_identity_2021 )[ levels( sexual_identity_2021 ) == "None of the above" ] <- "Other"
+    sexual_identity_lgb <- factor(
+      case_when( sexual_identity_2021 == "Homosexual" | sexual_identity_2021 == "Bisexual" ~ "LGB",
+                 sexual_identity_2021 == "Heterosexual" ~ "Heterosexual",
+                 sexual_identity_2021 == "Other" ~ "Other" ),
+      levels = c( "Heterosexual", "LGB", "Other" ) )
+    
+    # sexual minority
+    sexual_minority <- ifelse( sexual_identity_2021 == "Heterosexual", 0, 1 )
+    
+    # homosexual
+    homosexual <- ifelse( sexual_identity_2021 == "Homosexual", 1, 0 )
+    
+    # bisexual
+    bisexual <- ifelse( sexual_identity_2021 == "Bisexual", 1, 0 )
+    
+    # other
+    other <- ifelse( sexual_identity_2021 == "Other", 1, 0 )
+  } )
+} )
+
+imputed_data_2021_transformed <- bind_rows( implist_2021_transformed, .id = "imputation" ) # merge datasets
+imputed_data_2021_transformed$imputation <- as.numeric( imputed_data_2021_transformed$imputation )
+summary( imputed_data_2021_transformed )
+n_miss( imputed_data_2021_transformed ) # 0 missing
+
+
+# use calibrated weights to account for unit non-response
+# create survey design
+survey_design_imp <- svydesign( ids = ~ 1,
+                                strata = ~ sampling_strata_region,
+                                weights = ~ calibrated_weight,
+                                fpc = ~ no.of.population,
+                                data = imputationList( implist_2021_transformed )
+                                ) # without pre-calibration
+```
+
+### 5. Estimation of Proportions of Sexual Identities
+#### 5.1. Complete-case analysis
+##### 5.1.1. Define survey design
+```{r}
+# prepare dataset
+d_2021_complete_cc <- d_2021_complete
+
+d_2021_complete_cc$country_of_birth <- factor( 
+  ifelse( d_2021_complete_cc$country_of_birth == "Sweden", "Sweden",
+          ifelse( d_2021_complete_cc$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
+  levels = c( "Sweden", "Europe", "Outside Europe" )
+  )
+
+# create survey design
+survey_design_cc <- svydesign( ids = ~ 1, 
+                               strata = ~ sampling_strata_region,
+                               weights = ~ design_weight,
+                               fpc = ~ no.of.population,
+                               data = d_2021_complete_cc )
+
+categories <- c( "Heterosexual", "Homosexual", "Bisexual", "None of the above" )
+
+# the following analyses assume MCAR
+```
+
+##### 5.1.2. By sex
+```{r}
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_sex <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
+                        by = ~ sex,
+                        design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( sex ) ),
+                        FUN = svyciprop,
+                        vartype = "ci",
+                        method = "beta" )
+  
+  colnames( prop_cc_sex ) <- c( "subgroup", paste0( cat, "_point_estimate_2021" ), paste0( cat, "_lower_ci_2021" ), paste0( cat, "_upper_ci_2021" ) )
+  
+  list_of_df[[cat]] <- prop_cc_sex
+}
+
+prop_cc_sex <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+}, 
+list_of_df )
+
+prop_cc_sex <- left_join( prop_cc_sex,
+                          d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
+                                             !is.na( d_2021_complete_cc$sex ), ] %>% 
+                            group_by( subgroup = sex ) %>% 
+                            summarise( sample_size_2021 = n() ),
+                          by = "subgroup" ) %>%
+  mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 5.1.3. By age group
+###### 5.1.3.1. Calculate proportion by pre-specified age cut-off
+```{r}
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_age <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
+                        by = ~ age_cat,
+                        design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( age_cat ) ),
+                        FUN = svyciprop,
+                        vartype = "ci",
+                        method = "beta" )
+  
+  colnames( prop_cc_age ) <- c( "subgroup", paste0( cat, "_point_estimate_2021" ), paste0( cat, "_lower_ci_2021" ), paste0( cat, "_upper_ci_2021" ) )
+  
+  list_of_df[[cat]] <- prop_cc_age
+}
+
+prop_cc_age <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+}, 
+list_of_df )
+
+prop_cc_age <- left_join( prop_cc_age,
+                          d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
+                                             !is.na( d_2021_complete_cc$age_cat ), ] %>% 
+                            group_by( subgroup = age_cat ) %>% 
+                            summarise( sample_size_2021 = n() ),
+                          by = "subgroup" ) %>%
+  mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
+```
+
+###### 5.1.3.2. Calculate proportion and proportion ratio by varying age cut-offs
+```{r}
+d_2021_iteration_age <- d_2021_complete
+
+min_age <- min( d_2021_iteration_age$age, na.rm = TRUE )
+
+results_df <- data.frame()
+
+for ( cut_off in ( min_age ):100 ) {
+  d_2021_iteration_age$age_iteration <- ifelse( d_2021_iteration_age$age <= cut_off, "young", "old" )
+  
+  survey_design_iteration_age <- svydesign( ids = ~ 1, 
+                                            strata = ~ sampling_strata_region,
+                                            weights = ~ design_weight,
+                                            fpc = ~ no.of.population,
+                                            data = d_2021_iteration_age )
+  
+  list_of_df <- list()
+  
+  for ( cat in categories ) {
+    prop_cc_age_iteration <- svyby(
+      formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
+      by = ~ age_iteration,
+      design = subset( survey_design_iteration_age, !is.na( sexual_identity_2021 ) & !is.na( age ) ),
+      FUN = svyciprop,
+      method = "beta" )
+    
+    colnames( prop_cc_age_iteration ) <- c( "subgroup", 
+                                            paste0( cat, "_point_estimate_2021" ), 
+                                            paste0( cat, "_se_2021" ) )
+    
+    list_of_df[[cat]] <- prop_cc_age_iteration
+  }
+  
+  prop_cc_age_iteration_merged <- Reduce( function( df1, df2 ) { 
+    merge( df1, df2, by = "subgroup" ) 
+    }, 
+    list_of_df
+    )
+  
+  prop_cc_age_iteration_merged$cut_off <- cut_off
+  
+  results_df <- rbind( results_df, prop_cc_age_iteration_merged )
+  }
+
+results_wide <- results_df %>%
+  select( -ends_with( "_se_2021" ) ) %>%
+  pivot_wider( names_from = subgroup, 
+               values_from = c( Heterosexual_point_estimate_2021, 
+                                Homosexual_point_estimate_2021, 
+                                Bisexual_point_estimate_2021, 
+                                `None of the above_point_estimate_2021` ) 
+               )
+
+colnames( results_wide ) <- gsub( "_point_estimate_2021", "", colnames( results_wide ) )
+
+results_wide$Heterosexual_pr_2021 <- results_wide$Heterosexual_young/results_wide$Heterosexual_old
+results_wide$Homosexual_pr_2021 <- results_wide$Homosexual_young/results_wide$Homosexual_old
+results_wide$Bisexual_pr_2021 <- results_wide$Bisexual_young/results_wide$Bisexual_old
+results_wide$`None of the above_pr_2021` <- results_wide$`None of the above_young`/results_wide$`None of the above_old`
+
+results_wide$Heterosexual_pr_2021[ is.infinite( results_wide$Heterosexual_pr_2021 ) ] <- NA
+results_wide$Homosexual_pr_2021[ is.infinite( results_wide$Homosexual_pr_2021 ) ] <- NA
+results_wide$Bisexual_pr_2021[ is.infinite( results_wide$Bisexual_pr_2021 ) ] <- NA
+results_wide$`None of the above_pr_2021`[ is.infinite( results_wide$`None of the above_pr_2021` ) ] <- NA
+
+writexl::write_xlsx( results_wide, "prop_cc_age_iteration_2021.xlsx" )
+```
+
+###### 5.1.3.3. Calculate proportion by generation
+```{r}
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_generation_sex <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
+                                   by = ~ generation_sex,
+                                   design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( generation_sex ) ),
+                                   FUN = svyciprop,
+                                   vartype = "ci",
+                                   method = "beta" )
+  
+  colnames( prop_cc_generation_sex ) <- c( "subgroup", paste0( cat, "_point_estimate_2021" ), paste0( cat, "_lower_ci_2021" ), paste0( cat, "_upper_ci_2021" ) )
+  
+  list_of_df[[cat]] <- prop_cc_generation_sex
+}
+
+prop_cc_generation_sex <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+}, 
+list_of_df )
+
+prop_cc_generation_sex <- left_join( prop_cc_generation_sex,
+                          d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
+                                                !is.na( d_2021_complete_cc$generation_sex ), ] %>% 
+                            group_by( subgroup = generation_sex ) %>% 
+                            summarise( sample_size_2021 = n() ),
+                          by = "subgroup" ) %>%
+  mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
+```
+
+###### 5.1.3.4. Calculate proportion by age groups
+```{r}
+d_2021_iteration_age_group <- d_2021_complete
+
+d_2021_iteration_age_group$age_group <- cut( d_2021_iteration_age_group$age,
+                                             breaks = seq( 15, 79, by = 2 ),
+                                             include.lowest = TRUE,
+                                             right = TRUE )
+table( d_2021_iteration_age_group$age_group )
+d_2021_iteration_age_group$age_group_sex <- interaction( d_2021_iteration_age_group$age_group, d_2021_iteration_age_group$sex )
+table( d_2021_iteration_age_group$age_group_sex, useNA = "always" )
+
+survey_design_iteration_age_group <- svydesign( ids = ~ 1, 
+                                                strata = ~ sampling_strata_region,
+                                                weights = ~ design_weight,
+                                                fpc = ~ no.of.population,
+                                                data = d_2021_iteration_age_group )
+
+categories <- c( "Heterosexual", "Homosexual", "Bisexual", "None of the above" )
+
+
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_age_group_sex <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
+                                  by = ~ age_group_sex,
+                                  design = subset( survey_design_iteration_age_group,
+                                                   !is.na( sexual_identity_2021 ) & !is.na( age_group_sex ) ),
+                                  FUN = svyciprop,
+                                  vartype = "ci",
+                                  method = "beta" )
+  
+  colnames( prop_cc_age_group_sex ) <- c( "subgroup", paste0( cat, "_point_estimate_2021" ), paste0( cat, "_lower_ci_2021" ), paste0( cat, "_upper_ci_2021" ) )
+  
+  list_of_df[[cat]] <- prop_cc_age_group_sex
+}
+
+prop_cc_age_group_sex <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+}, 
+list_of_df )
+
+writexl::write_xlsx( prop_cc_age_group_sex, "prop_cc_age_group_sex_2021.xlsx" )
+```
+
+##### 5.1.4. By sex*age group
+```{r}
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_age_sex <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
+                            by = ~ age_sex,
+                            design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( age_sex ) ),
+                            FUN = svyciprop,
+                            vartype = "ci",
+                            method = "beta" )
+  
+  colnames( prop_cc_age_sex ) <- c( "subgroup", paste0( cat, "_point_estimate_2021" ), paste0( cat, "_lower_ci_2021" ), paste0( cat, "_upper_ci_2021" ) )
+  
+  list_of_df[[cat]] <- prop_cc_age_sex
+}
+
+prop_cc_age_sex <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+}, 
+list_of_df )
+
+prop_cc_age_sex <- left_join( prop_cc_age_sex,
+                              d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
+                                                 !is.na( d_2021_complete_cc$age_sex ), ] %>% 
+                                group_by( subgroup = age_sex ) %>% 
+                                summarise( sample_size_2021 = n() ),
+                              by = "subgroup" ) %>%
+  mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 5.1.5. By education
+```{r}
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_education <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
+                              by = ~ education,
+                              design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( education ) ),
+                              FUN = svyciprop,
+                              vartype = "ci",
+                              method = "beta" )
+  
+  colnames( prop_cc_education ) <- c( "subgroup", paste0( cat, "_point_estimate_2021" ), paste0( cat, "_lower_ci_2021" ), paste0( cat, "_upper_ci_2021" ) )
+  
+  list_of_df[[cat]] <- prop_cc_education
+}
+
+prop_cc_education <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+}, 
+list_of_df )
+
+prop_cc_education <- left_join( prop_cc_education,
+                                d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
+                                                   !is.na( d_2021_complete_cc$education ), ] %>% 
+                                  group_by( subgroup = education ) %>% 
+                                  summarise( sample_size_2021 = n() ),
+                                by = "subgroup" ) %>%
+  mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 5.1.6. By occupation
+```{r}
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_occupation <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
+                               by = ~ occupation,
+                               design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( occupation ) ),
+                               FUN = svyciprop,
+                               vartype = "ci",
+                               method = "beta" )
+  
+  colnames( prop_cc_occupation ) <- c( "subgroup", paste0( cat, "_point_estimate_2021" ), paste0( cat, "_lower_ci_2021" ), paste0( cat, "_upper_ci_2021" ) )
+  
+  list_of_df[[cat]] <- prop_cc_occupation
+  }
+
+prop_cc_occupation <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+  }, 
+  list_of_df )
+
+prop_cc_occupation <- left_join( prop_cc_occupation,
+                                     d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
+                                                           !is.na( d_2021_complete_cc$occupation ), ] %>% 
+                                       group_by( subgroup = occupation ) %>% 
+                                       summarise( sample_size_2021 = n() ),
+                                     by = "subgroup" ) %>%
+  mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 5.1.7. By income
+```{r}
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_income <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
+                           by = ~ income,
+                           design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( income ) ),
+                           FUN = svyciprop,
+                           vartype = "ci",
+                           method = "beta" )
+  
+  colnames( prop_cc_income ) <- c( "subgroup", paste0( cat, "_point_estimate_2021" ), paste0( cat, "_lower_ci_2021" ), paste0( cat, "_upper_ci_2021" ) )
+  
+  list_of_df[[cat]] <- prop_cc_income
+}
+
+prop_cc_income <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+}, 
+list_of_df )
+
+prop_cc_income <- left_join( prop_cc_income,
+                             d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
+                                                   !is.na( d_2021_complete_cc$income ), ] %>% 
+                               group_by( subgroup = income ) %>% 
+                               summarise( sample_size_2021 = n() ),
+                             by = "subgroup" ) %>%
+  mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 5.1.8. By country of birth
+```{r}
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_country_of_birth <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
+                                     by = ~ country_of_birth,
+                                     design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( country_of_birth ) ),
+                                     FUN = svyciprop,
+                                     vartype = "ci",
+                                     method = "beta" )
+  
+  colnames( prop_cc_country_of_birth ) <- c( "subgroup", paste0( cat, "_point_estimate_2021" ), paste0( cat, "_lower_ci_2021" ), paste0( cat, "_upper_ci_2021" ) )
+  
+  list_of_df[[cat]] <- prop_cc_country_of_birth
+}
+
+prop_cc_country_of_birth <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+}, 
+list_of_df )
+
+prop_cc_country_of_birth <- left_join( prop_cc_country_of_birth,
+                                       d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
+                                                   !is.na( d_2021_complete_cc$country_of_birth ), ] %>% 
+                                         group_by( subgroup = country_of_birth ) %>% 
+                                         summarise( sample_size_2021 = n() ),
+                                       by = "subgroup" ) %>%
+  mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 5.1.9. By marital status
+```{r}
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_marital_status <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
+                                   by = ~ marital_status,
+                                   design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( marital_status ) ),
+                                   FUN = svyciprop,
+                                   vartype = "ci",
+                                   method = "beta" )
+  
+  colnames( prop_cc_marital_status ) <- c( "subgroup", paste0( cat, "_point_estimate_2021" ), paste0( cat, "_lower_ci_2021" ), paste0( cat, "_upper_ci_2021" ) )
+  
+  list_of_df[[cat]] <- prop_cc_marital_status
+}
+
+prop_cc_marital_status <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+}, 
+list_of_df )
+
+prop_cc_marital_status <- left_join( prop_cc_marital_status,
+                                     d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
+                                                   !is.na( d_2021_complete_cc$marital_status ), ] %>% 
+                                       group_by( subgroup = marital_status ) %>% 
+                                       summarise( sample_size_2021 = n() ),
+                                     by = "subgroup" ) %>%
+  mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 5.1.10. Overall proportions of sexual identities in Stockholm County
+```{r}
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_overall <- svyciprop( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
+                                design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) ),
+                                vartype = "ci",
+                                method = "beta" )
+  
+  prop_cc_overall <- data.frame( prop_cc_overall[ 1 ], confint( prop_cc_overall )[ 1 ], confint( prop_cc_overall )[ 2 ] )
+  
+  colnames( prop_cc_overall ) <- c( paste0( cat, "_point_estimate_2021" ), paste0( cat, "_lower_ci_2021" ), paste0( cat, "_upper_ci_2021" ) )
+  
+  list_of_df[[cat]] <- prop_cc_overall
+}
+
+prop_cc_overall <- Reduce( function( df1, df2 ) {
+  cbind( df1, df2 )
+}, 
+list_of_df ) %>% 
+  as.data.frame() %>%
+  rownames_to_column( var = "subgroup" )
+
+prop_cc_overall[ 1, 1 ] <- "Stockholm County"
+
+prop_cc_overall <- bind_cols( prop_cc_overall,
+                              d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ), ] %>% 
+                                summarise( sample_size_2021 = n() ) ) %>%
+  mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 5.1.11. Merge datasets
+```{r}
+prop_cc_summary_2021 <- rbind( prop_cc_sex, 
+                               prop_cc_age,
+                               prop_cc_generation_sex,
+                               prop_cc_age_sex,
+                               prop_cc_education,
+                               prop_cc_occupation,
+                               prop_cc_income, 
+                               prop_cc_country_of_birth, 
+                               prop_cc_marital_status,
+                               prop_cc_overall 
+                               )
+
+writexl::write_xlsx( prop_cc_summary_2021, "prop_cc_summary_2021.xlsx" )
+```
+
+#### 5.2. Survey analyses of imputed datasets
+```{r}
+# among demographic subgroups
+sexual_identities <- c( "Heterosexual", "Homosexual", "Bisexual", "Other" )
+demographic_vars <- c( "age_exp", "generation_sex", "sex_exp", "age_sex", "country_of_birth_exp", "education_exp", "income_exp", "marital_status_exp" )
+
+prop_imp_list_subgroup_2021 <- list()
+
+for( cat in demographic_vars ) {
+  results <- calc_prop_imp_subgroup( implist = implist_2021_transformed,
+                                     design = survey_design_imp,
+                                     sexual_identities = sexual_identities,
+                                     demog_var = cat,
+                                     year = 2021 )
+  
+  prop_imp_list_subgroup_2021[[ cat ]] <- results
+  }
+
+prop_imp_summary_subgroup_2021 <- do.call( rbind, prop_imp_list_subgroup_2021 )
+rownames( prop_imp_summary_subgroup_2021 ) <- NULL
+
+# in Stockholm County
+prop_imp_overall_2021 <- calc_prop_imp_overall( design = survey_design_imp,
+                                                sexual_identities = sexual_identities,
+                                                year = 2021 )
+
+# merge results
+prop_imp_summary_2021 <- rbind( prop_imp_summary_subgroup_2021, prop_imp_overall_2021 )
+writexl::write_xlsx( prop_imp_summary_2021, "prop_imp_summary_2021.xlsx" )
+
+
+# calculate proportion by varying age cut-offs
+min_age <- min( d_2021$age )
+results_summary <- data.frame()
+prop_imp_age_iteration_2021 <- calc_prop_imp_iteration_age( min_age, sexual_identities, 2021 )
+writexl::write_xlsx( prop_imp_age_iteration_2021, "prop_imp_age_iteration_2021.xlsx" )
+
+# among age group
+prop_imp_age_group_sex <- calc_prop_imp_subgroup( implist = implist_2021_transformed,
+                                                  design = survey_design_imp,
+                                                  sexual_identities = sexual_identities,
+                                                  demog_var = "age_group_sex",
+                                                  year = 2021 )
+writexl::write_xlsx( prop_imp_age_group_sex, "prop_imp_age_group_sex_2021.xlsx" )
+
+# calculate overall proportion of LGB identity
+prop_lgb <- summary( MIcombine( with( survey_design_imp,
+                                      svyciprop( formula = ~ I( sexual_identity_lgb == "LGB" ), method = "beta" ) ) ) )
+prop_lgb <- rownames_to_column( prop_lgb[ , c( "results", "(lower", "upper)" ) ], var = "subgroup" )
+round( prop_lgb[ -1 ] * 100, 1 ) # proportion of LGB identity
+round( sum( d_2021$design_weight_unit_nonresponse ) * prop_lgb[ 1, 2 ], 0 ) # number of LGB population
+
+# calculate overall proportion of LGB identity by generation
+prop_lgb_generation <- summary( MIcombine( with( survey_design_imp,
+                                                 svyby( formula = ~ I( sexual_identity_lgb == "LGB" ),
+                                                        by = ~ generation,
+                                                        FUN = svyciprop,
+                                                        method = "beta" ) ) ) )
+rownames_to_column( prop_lgb_generation[ , c( "results", "(lower", "upper)" ) ], var = "subgroup" ) %>%
+  mutate( across( -1, ~ round(. * 100, 1 ) ) )
+```
+
+### 6. Relation between Sexual Identity and Demographic Factors
+#### 6.1. Complete-case analysis
+##### 6.1.1. Define survey design
+```{r}
+##### prepare dataset #####
+
+d_2021_cc_model <- d_2021_complete
+
+# exposures of interest, including age, sex, country of birth, education, income, and marital status
+d_2021_cc_model$age_exp <- relevel( d_2021_cc_model$age_cat, ref = "45-59" )
+
+d_2021_cc_model$sex_exp <- relevel( d_2021_cc_model$sex, ref = "Male" )
+
+d_2021_cc_model$country_of_birth <- factor( 
+  ifelse( d_2021_cc_model$country_of_birth == "Sweden", "Sweden",
+          ifelse( d_2021_cc_model$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
+  levels = c( "Sweden", "Europe", "Outside Europe" ) )
+d_2021_cc_model$country_of_birth_exp <- d_2021_cc_model$country_of_birth
+
+d_2021_cc_model$education_exp <- relevel( d_2021_cc_model$education, ref = ">=13 years" )
+
+d_2021_cc_model$income_exp <- relevel( d_2021_cc_model$income, ref = ">4,500" )
+
+d_2021_cc_model$marital_status_exp <- relevel( d_2021_cc_model$marital_status, ref = "Currently married" )
+
+
+# outcomes of interest, including sexual minority, homosexual, bisexual, and other
+d_2021_cc_model$sexual_minority <- ifelse( d_2021_cc_model$sexual_identity_2021 == "Heterosexual", 0, 1 )
+
+d_2021_cc_model$homosexual <- ifelse( d_2021_cc_model$sexual_identity_2021 == "Homosexual", 1, 0 )
+
+d_2021_cc_model$bisexual <- ifelse( d_2021_cc_model$sexual_identity_2021 == "Bisexual", 1, 0 )
+
+d_2021_cc_model$other <- ifelse( d_2021_cc_model$sexual_identity_2021 == "None of the above", 1, 0 )
+
+
+# confounding variables, including age, sex, country of birth, education, income, and marital status
+d_2021_cc_model$age_conf <- d_2021_cc_model$age # age
+
+d_2021_cc_model$sex_conf <- d_2021_cc_model$sex # sex
+
+d_2021_cc_model$country_of_birth_conf <- d_2021_cc_model$country_of_birth # country of birth
+
+d_2021_cc_model$education_conf <- d_2021_cc_model$education # education
+
+d_2021_cc_model$income_conf <- d_2021_cc_model$dispink2021 # disposable income
+
+d_2021_cc_model$marital_status_conf <- d_2021_cc_model$marital_status # marital status
+
+summary( d_2021_cc_model )
+
+##### create survey design #####
+survey_design_cc_model <- svydesign( ids = ~ 1,
+                                     strata = ~ sampling_strata_region,
+                                     weights = ~ design_weight,
+                                     fpc = ~ no.of.population,
+                                     data = d_2021_cc_model )
+
+# the following analyses assume MCAR
+```
+
+##### 6.1.2. Define model formula
+```{r}
+########## formula for crude analyses ##########
+
+##### exposure of interest: age #####
+
+fml_sexual_minority_age_crude <- sexual_minority ~ age_exp
+fml_homosexual_age_crude <- homosexual ~ age_exp
+fml_bisexual_age_crude <- bisexual ~ age_exp
+fml_other_age_crude <- other ~ age_exp
+
+# list of formulas
+fml_list_age_crude <- list(
+  fml_sexual_minority_age_crude = fml_sexual_minority_age_crude,
+  fml_homosexual_age_crude = fml_homosexual_age_crude,
+  fml_bisexual_age_crude = fml_bisexual_age_crude,
+  fml_other_age_crude = fml_other_age_crude
+  )
+
+
+##### exposure of interest: age by sex #####
+
+fml_sexual_minority_age_by_sex_crude <- sexual_minority ~ age_exp*sex_exp
+fml_homosexual_age_by_sex_crude <- homosexual ~ age_exp*sex_exp
+fml_bisexual_age_by_sex_crude <- bisexual ~ age_exp*sex_exp
+fml_other_age_by_sex_crude <- other ~ age_exp*sex_exp
+
+# list of formulas
+fml_list_age_by_sex_crude <- list(
+  fml_sexual_minority_age_by_sex_crude = fml_sexual_minority_age_by_sex_crude,
+  fml_homosexual_age_by_sex_crude = fml_homosexual_age_by_sex_crude,
+  fml_bisexual_age_by_sex_crude = fml_bisexual_age_by_sex_crude,
+  fml_other_age_by_sex_crude = fml_other_age_by_sex_crude
+  )
+
+
+##### exposure of interest: sex #####
+
+fml_sexual_minority_sex_crude <- sexual_minority ~ sex_exp
+fml_homosexual_sex_crude <- homosexual ~ sex_exp
+fml_bisexual_sex_crude <- bisexual ~ sex_exp
+fml_other_sex_crude <- other ~ sex_exp
+
+# list of formulas
+fml_list_sex_crude <- list(
+  fml_sexual_minority_sex_crude = fml_sexual_minority_sex_crude,
+  fml_homosexual_sex_crude = fml_homosexual_sex_crude,
+  fml_bisexual_sex_crude = fml_bisexual_sex_crude,
+  fml_other_sex_crude = fml_other_sex_crude
+  )
+
+
+##### exposure of interest: country of birth #####
+
+fml_sexual_minority_country_of_birth_crude <- sexual_minority ~ country_of_birth_exp
+fml_homosexual_country_of_birth_crude <- homosexual ~ country_of_birth_exp
+fml_bisexual_country_of_birth_crude <- bisexual ~ country_of_birth_exp
+fml_other_country_of_birth_crude <- other ~ country_of_birth_exp
+
+# list of formulas
+fml_list_country_of_birth_crude <- list(
+  fml_sexual_minority_country_of_birth_crude = fml_sexual_minority_country_of_birth_crude,
+  fml_homosexual_country_of_birth_crude = fml_homosexual_country_of_birth_crude,
+  fml_bisexual_country_of_birth_crude = fml_bisexual_country_of_birth_crude,
+  fml_other_country_of_birth_crude = fml_other_country_of_birth_crude
+)
+
+
+##### exposure of interest: education #####
+
+fml_sexual_minority_education_crude <- sexual_minority ~ education_exp
+fml_homosexual_education_crude <- homosexual ~ education_exp
+fml_bisexual_education_crude <- bisexual ~ education_exp
+fml_other_education_crude <- other ~ education_exp
+
+# list of formulas
+fml_list_education_crude <- list(
+  fml_sexual_minority_education_crude = fml_sexual_minority_education_crude,
+  fml_homosexual_education_crude = fml_homosexual_education_crude,
+  fml_bisexual_education_crude = fml_bisexual_education_crude,
+  fml_other_education_crude = fml_other_education_crude
+  )
+
+
+##### exposure of interest: education by sex #####
+
+fml_sexual_minority_education_by_sex_crude <- sexual_minority ~ education_exp*sex_exp
+fml_homosexual_education_by_sex_crude <- homosexual ~ education_exp*sex_exp
+fml_bisexual_education_by_sex_crude <- bisexual ~ education_exp*sex_exp
+fml_other_education_by_sex_crude <- other ~ education_exp*sex_exp
+
+# list of formulas
+fml_list_education_by_sex_crude <- list(
+  fml_sexual_minority_education_by_sex_crude = fml_sexual_minority_education_by_sex_crude,
+  fml_homosexual_education_by_sex_crude = fml_homosexual_education_by_sex_crude,
+  fml_bisexual_education_by_sex_crude = fml_bisexual_education_by_sex_crude,
+  fml_other_education_by_sex_crude = fml_other_education_by_sex_crude
+)
+
+
+##### exposure of interest: income #####
+
+fml_sexual_minority_income_crude <- sexual_minority ~ income_exp
+fml_homosexual_income_crude <- homosexual ~ income_exp
+fml_bisexual_income_crude <- bisexual ~ income_exp
+fml_other_income_crude <- other ~ income_exp
+
+# list of formulas
+fml_list_income_crude <- list(
+  fml_sexual_minority_income_crude = fml_sexual_minority_income_crude,
+  fml_homosexual_income_crude = fml_homosexual_income_crude,
+  fml_bisexual_income_crude = fml_bisexual_income_crude,
+  fml_other_income_crude = fml_other_income_crude
+  )
+
+
+##### exposure of interest: income by sex #####
+
+fml_sexual_minority_income_by_sex_crude <- sexual_minority ~ income_exp*sex_exp
+fml_homosexual_income_by_sex_crude <- homosexual ~ income_exp*sex_exp
+fml_bisexual_income_by_sex_crude <- bisexual ~ income_exp*sex_exp
+fml_other_income_by_sex_crude <- other ~ income_exp*sex_exp
+
+# list of formulas
+fml_list_income_by_sex_crude <- list(
+  fml_sexual_minority_income_by_sex_crude = fml_sexual_minority_income_by_sex_crude,
+  fml_homosexual_income_by_sex_crude = fml_homosexual_income_by_sex_crude,
+  fml_bisexual_income_by_sex_crude = fml_bisexual_income_by_sex_crude,
+  fml_other_income_by_sex_crude = fml_other_income_by_sex_crude
+)
+
+
+##### exposure of interest: marital status #####
+
+fml_sexual_minority_marital_status_crude <- sexual_minority ~ marital_status_exp
+fml_homosexual_marital_status_crude <- homosexual ~ marital_status_exp
+fml_bisexual_marital_status_crude <- bisexual ~ marital_status_exp
+fml_other_marital_status_crude <- other ~ marital_status_exp
+
+# list of formulas
+fml_list_marital_status_crude <- list(
+  fml_sexual_minority_marital_status_crude = fml_sexual_minority_marital_status_crude,
+  fml_homosexual_marital_status_crude = fml_homosexual_marital_status_crude,
+  fml_bisexual_marital_status_crude = fml_bisexual_marital_status_crude,
+  fml_other_marital_status_crude = fml_other_marital_status_crude
+  )
+
+
+########## formula for adjusted analyses ########## 
+
+##### exposure of interest: age #####
+
+# sexual minority
+fml_sexual_minority_age_model_1 <- sexual_minority ~ age_exp + sex_conf + country_of_birth_conf
+fml_sexual_minority_age_model_2 <- sexual_minority ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
+
+# homosexual
+fml_homosexual_age_model_1 <- homosexual ~ age_exp + sex_conf + country_of_birth_conf
+fml_homosexual_age_model_2 <- homosexual ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
+
+# bisexual
+fml_bisexual_age_model_1 <- bisexual ~ age_exp + sex_conf + country_of_birth_conf
+fml_bisexual_age_model_2 <- bisexual ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
+
+# other
+fml_other_age_model_1 <- other ~ age_exp + sex_conf + country_of_birth_conf
+fml_other_age_model_2 <- other ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
+
+# list of formulas
+fml_list_age <- list(
+  fml_sexual_minority_age_model_1 = fml_sexual_minority_age_model_1,
+  fml_sexual_minority_age_model_2 = fml_sexual_minority_age_model_2,
+  fml_homosexual_age_model_1 = fml_homosexual_age_model_1,
+  fml_homosexual_age_model_2 = fml_homosexual_age_model_2,
+  fml_bisexual_age_model_1 = fml_bisexual_age_model_1,
+  fml_bisexual_age_model_2 = fml_bisexual_age_model_2,
+  fml_other_age_model_1 = fml_other_age_model_1,
+  fml_other_age_model_2 = fml_other_age_model_2
+  )
+
+
+##### exposure of interest: age by sex #####
+
+# sexual minority
+fml_sexual_minority_age_by_sex_model_1 <- sexual_minority ~ age_exp*sex_exp + country_of_birth_conf
+fml_sexual_minority_age_by_sex_model_2 <- sexual_minority ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
+
+# homosexual
+fml_homosexual_age_by_sex_model_1 <- homosexual ~ age_exp*sex_exp + country_of_birth_conf
+fml_homosexual_age_by_sex_model_2 <- homosexual ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
+
+# bisexual
+fml_bisexual_age_by_sex_model_1 <- bisexual ~ age_exp*sex_exp + country_of_birth_conf
+fml_bisexual_age_by_sex_model_2 <- bisexual ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
+
+# other
+fml_other_age_by_sex_model_1 <- other ~ age_exp*sex_exp + country_of_birth_conf
+fml_other_age_by_sex_model_2 <- other ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
+
+# list of formulas
+fml_list_age_by_sex <- list(
+  fml_sexual_minority_age_by_sex_model_1 = fml_sexual_minority_age_by_sex_model_1,
+  fml_sexual_minority_age_by_sex_model_2 = fml_sexual_minority_age_by_sex_model_2,
+  fml_homosexual_age_by_sex_model_1 = fml_homosexual_age_by_sex_model_1,
+  fml_homosexual_age_by_sex_model_2 = fml_homosexual_age_by_sex_model_2,
+  fml_bisexual_age_by_sex_model_1 = fml_bisexual_age_by_sex_model_1,
+  fml_bisexual_age_by_sex_model_2 = fml_bisexual_age_by_sex_model_2,
+  fml_other_age_by_sex_model_1 = fml_other_age_by_sex_model_1,
+  fml_other_age_by_sex_model_2 = fml_other_age_by_sex_model_2
+  )
+
+
+##### exposure of interest: sex #####
+
+# sexual minority
+fml_sexual_minority_sex_model_1 <- sexual_minority ~ sex_exp + age_conf + country_of_birth_conf
+fml_sexual_minority_sex_model_2 <- sexual_minority ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
+
+# homosexual
+fml_homosexual_sex_model_1 <- homosexual ~ sex_exp + age_conf + country_of_birth_conf
+fml_homosexual_sex_model_2 <- homosexual ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
+
+# bisexual
+fml_bisexual_sex_model_1 <- bisexual ~ sex_exp + age_conf + country_of_birth_conf
+fml_bisexual_sex_model_2 <- bisexual ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
+
+# other
+fml_other_sex_model_1 <- other ~ sex_exp + age_conf + country_of_birth_conf
+fml_other_sex_model_2 <- other ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
+
+# list of formulas
+fml_list_sex <- list(
+  fml_sexual_minority_sex_model_1 = fml_sexual_minority_sex_model_1,
+  fml_sexual_minority_sex_model_2 = fml_sexual_minority_sex_model_2,
+  fml_homosexual_sex_model_1 = fml_homosexual_sex_model_1,
+  fml_homosexual_sex_model_2 = fml_homosexual_sex_model_2,
+  fml_bisexual_sex_model_1 = fml_bisexual_sex_model_1,
+  fml_bisexual_sex_model_2 = fml_bisexual_sex_model_2,
+  fml_other_sex_model_1 = fml_other_sex_model_1,
+  fml_other_sex_model_2 = fml_other_sex_model_2
+  )
+
+
+##### exposure of interest: country of birth #####
+
+# sexual minority
+fml_sexual_minority_country_of_birth_model_1 <- sexual_minority ~ country_of_birth_exp + age_conf + sex_conf
+fml_sexual_minority_country_of_birth_model_2 <- sexual_minority ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf 
+
+# homosexual
+fml_homosexual_country_of_birth_model_1 <- homosexual ~ country_of_birth_exp + age_conf + sex_conf
+fml_homosexual_country_of_birth_model_2 <- homosexual ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf 
+
+# bisexual
+fml_bisexual_country_of_birth_model_1 <- bisexual ~ country_of_birth_exp + age_conf + sex_conf
+fml_bisexual_country_of_birth_model_2 <- bisexual ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf 
+
+# other
+fml_other_country_of_birth_model_1 <- other ~ country_of_birth_exp + age_conf + sex_conf
+fml_other_country_of_birth_model_2 <- other ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf 
+
+# list of formulas
+fml_list_country_of_birth <- list(
+  fml_sexual_minority_country_of_birth_model_1 = fml_sexual_minority_country_of_birth_model_1,
+  fml_sexual_minority_country_of_birth_model_2 = fml_sexual_minority_country_of_birth_model_2,
+  fml_homosexual_country_of_birth_model_1 = fml_homosexual_country_of_birth_model_1,
+  fml_homosexual_country_of_birth_model_2 = fml_homosexual_country_of_birth_model_2,
+  fml_bisexual_country_of_birth_model_1 = fml_bisexual_country_of_birth_model_1,
+  fml_bisexual_country_of_birth_model_2 = fml_bisexual_country_of_birth_model_2,
+  fml_other_country_of_birth_model_1 = fml_other_country_of_birth_model_1,
+  fml_other_country_of_birth_model_2 = fml_other_country_of_birth_model_2
+)
+
+
+##### exposure of interest: education #####
+
+# sexual minority
+fml_sexual_minority_education_model_1 <- sexual_minority ~ education_exp + age_conf + sex_conf + country_of_birth_conf
+fml_sexual_minority_education_model_2 <- sexual_minority ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf 
+
+# homosexual
+fml_homosexual_education_model_1 <- homosexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf
+fml_homosexual_education_model_2 <- homosexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf 
+
+# bisexual
+fml_bisexual_education_model_1 <- bisexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf
+fml_bisexual_education_model_2 <- bisexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf 
+
+# other
+fml_other_education_model_1 <- other ~ education_exp + age_conf + sex_conf + country_of_birth_conf
+fml_other_education_model_2 <- other ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf 
+
+# list of formulas
+fml_list_education <- list(
+  fml_sexual_minority_education_model_1 = fml_sexual_minority_education_model_1,
+  fml_sexual_minority_education_model_2 = fml_sexual_minority_education_model_2,
+  fml_homosexual_education_model_1 = fml_homosexual_education_model_1,
+  fml_homosexual_education_model_2 = fml_homosexual_education_model_2,
+  fml_bisexual_education_model_1 = fml_bisexual_education_model_1,
+  fml_bisexual_education_model_2 = fml_bisexual_education_model_2,
+  fml_other_education_model_1 = fml_other_education_model_1,
+  fml_other_education_model_2 = fml_other_education_model_2
+  )
+
+
+##### exposure of interest: education by sex #####
+
+# sexual minority
+fml_sexual_minority_education_by_sex_model_1 <- sexual_minority ~ education_exp*sex_exp + age_conf + country_of_birth_conf
+fml_sexual_minority_education_by_sex_model_2 <- sexual_minority ~ education_exp*sex_exp + age_conf + country_of_birth_conf + income_conf + marital_status_conf 
+
+# homosexual
+fml_homosexual_education_by_sex_model_1 <- homosexual ~ education_exp*sex_exp + age_conf + country_of_birth_conf
+fml_homosexual_education_by_sex_model_2 <- homosexual ~ education_exp*sex_exp + age_conf + country_of_birth_conf + income_conf + marital_status_conf 
+
+# bisexual
+fml_bisexual_education_by_sex_model_1 <- bisexual ~ education_exp*sex_exp + age_conf + country_of_birth_conf
+fml_bisexual_education_by_sex_model_2 <- bisexual ~ education_exp*sex_exp + age_conf + country_of_birth_conf + income_conf + marital_status_conf 
+
+# other
+fml_other_education_by_sex_model_1 <- other ~ education_exp*sex_exp + age_conf + country_of_birth_conf
+fml_other_education_by_sex_model_2 <- other ~ education_exp*sex_exp + age_conf + country_of_birth_conf + income_conf + marital_status_conf 
+
+# list of formulas
+fml_list_education_by_sex <- list(
+  fml_sexual_minority_education_by_sex_model_1 = fml_sexual_minority_education_by_sex_model_1,
+  fml_sexual_minority_education_by_sex_model_2 = fml_sexual_minority_education_by_sex_model_2,
+  fml_homosexual_education_by_sex_model_1 = fml_homosexual_education_by_sex_model_1,
+  fml_homosexual_education_by_sex_model_2 = fml_homosexual_education_by_sex_model_2,
+  fml_bisexual_education_by_sex_model_1 = fml_bisexual_education_by_sex_model_1,
+  fml_bisexual_education_by_sex_model_2 = fml_bisexual_education_by_sex_model_2,
+  fml_other_education_by_sex_model_1 = fml_other_education_by_sex_model_1,
+  fml_other_education_by_sex_model_2 = fml_other_education_by_sex_model_2
+)
+
+
+##### exposure of interest: income #####
+
+# sexual minority
+fml_sexual_minority_income_model_1 <- sexual_minority ~ income_exp + age_conf + sex_conf + country_of_birth_conf
+fml_sexual_minority_income_model_2 <- sexual_minority ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf 
+
+# homosexual
+fml_homosexual_income_model_1 <- homosexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf
+fml_homosexual_income_model_2 <- homosexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf 
+
+# bisexual
+fml_bisexual_income_model_1 <- bisexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf
+fml_bisexual_income_model_2 <- bisexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf 
+
+# other
+fml_other_income_model_1 <- other ~ income_exp + age_conf + sex_conf + country_of_birth_conf
+fml_other_income_model_2 <- other ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf 
+
+# list of formulas
+fml_list_income <- list(
+  fml_sexual_minority_income_model_1 = fml_sexual_minority_income_model_1,
+  fml_sexual_minority_income_model_2 = fml_sexual_minority_income_model_2,
+  fml_homosexual_income_model_1 = fml_homosexual_income_model_1,
+  fml_homosexual_income_model_2 = fml_homosexual_income_model_2,
+  fml_bisexual_income_model_1 = fml_bisexual_income_model_1,
+  fml_bisexual_income_model_2 = fml_bisexual_income_model_2,
+  fml_other_income_model_1 = fml_other_income_model_1,
+  fml_other_income_model_2 = fml_other_income_model_2
+  )
+
+
+##### exposure of interest: income by sex #####
+
+# sexual minority
+fml_sexual_minority_income_by_sex_model_1 <- sexual_minority ~ income_exp*sex_exp + age_conf + country_of_birth_conf
+fml_sexual_minority_income_by_sex_model_2 <- sexual_minority ~ income_exp*sex_exp + age_conf + country_of_birth_conf + education_conf + marital_status_conf 
+
+# homosexual
+fml_homosexual_income_by_sex_model_1 <- homosexual ~ income_exp*sex_exp + age_conf + country_of_birth_conf
+fml_homosexual_income_by_sex_model_2 <- homosexual ~ income_exp*sex_exp + age_conf + country_of_birth_conf + education_conf + marital_status_conf 
+
+# bisexual
+fml_bisexual_income_by_sex_model_1 <- bisexual ~ income_exp*sex_exp + age_conf + country_of_birth_conf
+fml_bisexual_income_by_sex_model_2 <- bisexual ~ income_exp*sex_exp + age_conf + country_of_birth_conf + education_conf + marital_status_conf 
+
+# other
+fml_other_income_by_sex_model_1 <- other ~ income_exp*sex_exp + age_conf + country_of_birth_conf
+fml_other_income_by_sex_model_2 <- other ~ income_exp*sex_exp + age_conf + country_of_birth_conf + education_conf + marital_status_conf 
+
+# list of formulas
+fml_list_income_by_sex <- list(
+  fml_sexual_minority_income_by_sex_model_1 = fml_sexual_minority_income_by_sex_model_1,
+  fml_sexual_minority_income_by_sex_model_2 = fml_sexual_minority_income_by_sex_model_2,
+  fml_homosexual_income_by_sex_model_1 = fml_homosexual_income_by_sex_model_1,
+  fml_homosexual_income_by_sex_model_2 = fml_homosexual_income_by_sex_model_2,
+  fml_bisexual_income_by_sex_model_1 = fml_bisexual_income_by_sex_model_1,
+  fml_bisexual_income_by_sex_model_2 = fml_bisexual_income_by_sex_model_2,
+  fml_other_income_by_sex_model_1 = fml_other_income_by_sex_model_1,
+  fml_other_income_by_sex_model_2 = fml_other_income_by_sex_model_2
+)
+
+
+##### exposure of interest: marital status #####
+
+# sexual minority
+fml_sexual_minority_marital_status_model_1 <- sexual_minority ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf
+fml_sexual_minority_marital_status_model_2 <- sexual_minority ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf 
+
+# homosexual
+fml_homosexual_marital_status_model_1 <- homosexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf
+fml_homosexual_marital_status_model_2 <- homosexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf 
+
+# bisexual
+fml_bisexual_marital_status_model_1 <- bisexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf
+fml_bisexual_marital_status_model_2 <- bisexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf 
+
+# other
+fml_other_marital_status_model_1 <- other ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf
+fml_other_marital_status_model_2 <- other ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf 
+
+# list of formulas
+fml_list_marital_status <- list(
+  fml_sexual_minority_marital_status_model_1 = fml_sexual_minority_marital_status_model_1,
+  fml_sexual_minority_marital_status_model_2 = fml_sexual_minority_marital_status_model_2,
+  fml_homosexual_marital_status_model_1 = fml_homosexual_marital_status_model_1,
+  fml_homosexual_marital_status_model_2 = fml_homosexual_marital_status_model_2,
+  fml_bisexual_marital_status_model_1 = fml_bisexual_marital_status_model_1,
+  fml_bisexual_marital_status_model_2 = fml_bisexual_marital_status_model_2,
+  fml_other_marital_status_model_1 = fml_other_marital_status_model_1,
+  fml_other_marital_status_model_2 = fml_other_marital_status_model_2
+  )
+
+exposures <- c( "age", "age_by_sex", "sex", "country_of_birth", "education", "education_by_sex", "income", "income_by_sex", "marital_status" )
+```
+
+##### 6.1.3. Unadjusted analyses
+```{r}
+# fit Poisson regression model for each exposure and each outcome
+all_models_cc_crude <- list()
+
+for ( exposure in exposures ) {
+  all_models_cc_crude[[ exposure ]] <- list()
+  
+  fml_list_name <- paste( "fml_list", exposure, "crude", sep = "_" )
+  
+  for ( name in names( get( fml_list_name ) ) ) {
+    all_models_cc_crude[[ exposure ]][[ name ]] <- fit_model_crude( get( fml_list_name )[[ name ]],
+                                                                    survey_design_cc_model )
+  }
+}
+
+# refit the model for interaction, using female as the reference group
+# to extract results among females
+d_2021_cc_model$sex_exp <- relevel( d_2021_cc_model$sex, ref = "Female" )
+
+survey_design_cc_model_refit <- svydesign( ids = ~ 1,
+                                           strata = ~ sampling_strata_region,
+                                           weights = ~ design_weight,
+                                           fpc = ~ no.of.population,
+                                           data = d_2021_cc_model )
+
+exposures_by_sex <- c( "age_by_sex", "education_by_sex", "income_by_sex" )
+
+refit_model_cc_by_sex_crude <- list()
+
+for ( exposure in exposures_by_sex ) {
+  refit_model_cc_by_sex_crude[[ exposure ]] <- list()
+  
+  fml_list_name <- paste( "fml_list", exposure, "crude", sep = "_" )
+  
+  for ( name in names( get( fml_list_name ) ) ) {
+    refit_model_cc_by_sex_crude[[ exposure ]][[ name ]] <- fit_model_crude( get( fml_list_name )[[ name ]],
+                                                                            survey_design_cc_model_refit )
+    }
+  }
+```
+
+##### 6.1.4. Adjusted analyses
+```{r}
+# fit Poisson, log-binomial, and logistic regression models for each exposure and each outcome
+all_models_cc <- list()
+
+for ( exposure in exposures ) {
+  all_models_cc[[ exposure ]] <- list()
+  
+  fml_list_name <- paste( "fml_list", exposure, sep = "_" )
+  
+  for ( name in names( get( fml_list_name ) ) ) {
+    all_models_cc[[ exposure ]][[ name ]] <- fit_models( get( fml_list_name )[[ name ]],
+                                                         survey_design_cc_model )
+  }
+}
+
+# refit the three models for interaction, using female as the reference group
+# to extract results among females
+refit_model_cc_by_sex <- list()
+
+for ( exposure in exposures_by_sex ) {
+  refit_model_cc_by_sex[[ exposure ]] <- list()
+  
+  fml_list_name <- paste( "fml_list", exposure, sep = "_" )
+  
+  for ( name in names( get( fml_list_name ) ) ) {
+    refit_model_cc_by_sex[[ exposure ]][[ name ]] <- fit_models( get( fml_list_name )[[ name ]],
+                                                                 survey_design_cc_model_refit )
+  }
+  }
+```
+
+##### 6.1.5. Extract results
+```{r}
+identities <- c( "sexual_minority", "homosexual", "bisexual", "other" )
+models <- c( "poisson", "log_binomial", "logistic" )
+
+########## Crude analyses ##########
+
+##### exposure of interest: age #####
+
+exposures_age <- c( "age_exp16-29", "age_exp30-44", "age_exp>=60"  )
+
+# extract coefficient and 95% CI
+results_cc_age_coef_crude <- list()
+
+for ( outcome in names( all_models_cc_crude$age ) ) {
+  results_cc_age_coef_crude[[ outcome ]] <- extract_results_coef_crude(
+    all_models_list = all_models_cc_crude, 
+    exposure = "age", 
+    outcome = outcome, 
+    variables = exposures_age
+  )
+}
+
+# extract proportion ratio and 95% CI
+results_cc_age_pr_crude <- extract_results_pr_crude( results_cc_age_coef_crude, identities, "age" )
+
+
+##### exposure of interest: age by sex #####
+
+exposures_age_male <- c( "age_exp16-29", "age_exp30-44", "age_exp>=60", "age_exp16-29:sex_expFemale", "age_exp30-44:sex_expFemale", "age_exp>=60:sex_expFemale" )
+exposures_age_female <- c( "age_exp16-29", "age_exp30-44", "age_exp>=60", "age_exp16-29:sex_expMale", "age_exp30-44:sex_expMale", "age_exp>=60:sex_expMale" )
+
+# extract coefficient and 95% CI among males
+results_cc_age_by_sex_coef_crude_male <- list()
+
+for ( outcome in names( all_models_cc_crude$age_by_sex ) ) {
+  results_cc_age_by_sex_coef_crude_male[[ outcome ]] <- extract_results_coef_crude(
+    all_models_list = all_models_cc_crude, 
+    exposure = "age_by_sex", 
+    outcome = outcome, 
+    variables = exposures_age_male
+  )
+}
+
+# extract coefficient and 95% CI among females
+results_cc_age_by_sex_coef_crude_female <- list()
+
+for ( outcome in names( refit_model_cc_by_sex_crude$age_by_sex ) ) {
+    results_cc_age_by_sex_coef_crude_female[[ outcome ]] <- extract_results_coef_crude(
+      all_models_list = refit_model_cc_by_sex_crude, 
+      exposure = "age_by_sex", 
+      outcome = outcome, 
+      variables = exposures_age_female
+    )
+}
+
+# extract proportion ratio and 95% CI
+results_cc_age_by_sex_pr_crude_male <- extract_results_pr_crude( results_cc_age_by_sex_coef_crude_male, identities, "age_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Female", Exposure ), 
+                             paste0( Exposure, "_Male" ), Exposure ) )
+
+results_cc_age_by_sex_pr_crude_female <- extract_results_pr_crude( results_cc_age_by_sex_coef_crude_female, identities, "age_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Male", Exposure ), 
+                             paste0( Exposure, "_Female" ), Exposure ) )
+
+results_cc_age_by_sex_pr_crude <- rbind( results_cc_age_by_sex_pr_crude_male[ c( 1:3 ), ], 
+                                         results_cc_age_by_sex_pr_crude_female[ c( 1:3 ), ] )
+
+
+##### exposure of interest: sex #####
+
+exposures_sex <- c( "sex_expFemale" )
+
+# extract coefficient and 95% CI
+results_cc_sex_coef_crude <- list()
+
+for ( outcome in names( all_models_cc_crude$sex ) ) {
+  results_cc_sex_coef_crude[[ outcome ]] <- extract_results_coef_crude(
+    all_models_list = all_models_cc_crude, 
+    exposure = "sex", 
+    outcome = outcome, 
+    variables = exposures_sex
+  )
+}
+
+# extract proportion ratio and 95% CI
+results_cc_sex_pr_crude <- extract_results_pr_crude( results_cc_sex_coef_crude, identities, "sex" )
+
+
+##### exposure of interest: country of birth #####
+
+exposures_country_of_birth <- c( "country_of_birth_expEurope", "country_of_birth_expOutside Europe" )
+
+# extract coefficient and 95% CI
+results_cc_country_of_birth_coef_crude <- list()
+
+for ( outcome in names( all_models_cc_crude$country_of_birth ) ) {
+  results_cc_country_of_birth_coef_crude[[ outcome ]] <- extract_results_coef_crude(
+    all_models_list = all_models_cc_crude, 
+    exposure = "country_of_birth", 
+    outcome = outcome, 
+    variables = exposures_country_of_birth
+  )
+}
+
+# extract proportion ratio and 95% CI
+results_cc_country_of_birth_pr_crude <- extract_results_pr_crude( results_cc_country_of_birth_coef_crude, identities, "country_of_birth" )
+
+
+##### exposure of interest: education #####
+
+exposures_education <- c( "education_exp<=9 years", "education_exp10-12 years" )
+
+# extract coefficient and 95% CI
+results_cc_education_coef_crude <- list()
+
+for ( outcome in names( all_models_cc_crude$education ) ) {
+  results_cc_education_coef_crude[[ outcome ]] <- extract_results_coef_crude(
+    all_models_list = all_models_cc_crude, 
+    exposure = "education", 
+    outcome = outcome, 
+    variables = exposures_education
+  )
+}
+
+# extract proportion ratio and 95% CI
+results_cc_education_pr_crude <- extract_results_pr_crude( results_cc_education_coef_crude, identities, "education" )
+
+
+##### exposure of interest: education by sex #####
+
+# extract coefficient and 95% CI among males
+results_cc_education_by_sex_coef_crude_male <- list()
+
+for ( outcome in names( all_models_cc_crude$education_by_sex ) ) {
+  results_cc_education_by_sex_coef_crude_male[[ outcome ]] <- extract_results_coef_crude(
+    all_models_list = all_models_cc_crude, 
+    exposure = "education_by_sex", 
+    outcome = outcome, 
+    variables = exposures_education
+  )
+}
+
+# extract coefficient and 95% CI among females
+results_cc_education_by_sex_coef_crude_female <- list()
+
+for ( outcome in names( refit_model_cc_by_sex_crude$education_by_sex ) ) {
+  results_cc_education_by_sex_coef_crude_female[[ outcome ]] <- extract_results_coef_crude(
+    all_models_list = refit_model_cc_by_sex_crude, 
+    exposure = "education_by_sex", 
+    outcome = outcome, 
+    variables = exposures_education
+  )
+}
+
+# extract proportion ratio and 95% CI
+results_cc_education_by_sex_pr_crude_male <- extract_results_pr_crude( results_cc_education_by_sex_coef_crude_male, identities, "education_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "education_exp", Exposure ) & !grepl( "Female", Exposure ), 
+                             paste0( Exposure, "_Male" ), Exposure ) )
+
+results_cc_education_by_sex_pr_crude_female <- extract_results_pr_crude( results_cc_education_by_sex_coef_crude_female, identities, "education_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "education_exp", Exposure ) & !grepl( "Male", Exposure ), 
+                             paste0( Exposure, "_Female" ), Exposure ) )
+
+results_cc_education_by_sex_pr_crude <- rbind( results_cc_education_by_sex_pr_crude_male, results_cc_education_by_sex_pr_crude_female )
+
+
+##### exposure of interest: income #####
+
+exposures_income <- c( "income_exp<=2,500", "income_exp(2,500, 3,500]", "income_exp(3,500, 4,500]" )
+
+# extract coefficient and 95% CI
+results_cc_income_coef_crude <- list()
+
+for ( outcome in names( all_models_cc_crude$income ) ) {
+  results_cc_income_coef_crude[[ outcome ]] <- extract_results_coef_crude(
+    all_models_list = all_models_cc_crude, 
+    exposure = "income", 
+    outcome = outcome, 
+    variables = exposures_income
+  )
+}
+
+# extract proportion ratio and 95% CI
+results_cc_income_pr_crude <- extract_results_pr_crude( results_cc_income_coef_crude, identities, "income" )
+
+
+##### exposure of interest: income by sex #####
+
+# extract coefficient and 95% CI among males
+results_cc_income_by_sex_coef_crude_male <- list()
+
+for ( outcome in names( all_models_cc_crude$income_by_sex ) ) {
+  results_cc_income_by_sex_coef_crude_male[[ outcome ]] <- extract_results_coef_crude(
+    all_models_list = all_models_cc_crude, 
+    exposure = "income_by_sex", 
+    outcome = outcome, 
+    variables = exposures_income
+  )
+}
+
+# extract coefficient and 95% CI among females
+results_cc_income_by_sex_coef_crude_female <- list()
+
+for ( outcome in names( refit_model_cc_by_sex_crude$income_by_sex ) ) {
+  results_cc_income_by_sex_coef_crude_female[[ outcome ]] <- extract_results_coef_crude(
+    all_models_list = refit_model_cc_by_sex_crude, 
+    exposure = "income_by_sex", 
+    outcome = outcome, 
+    variables = exposures_income
+  )
+}
+
+# extract proportion ratio and 95% CI
+results_cc_income_by_sex_pr_crude_male <- extract_results_pr_crude( results_cc_income_by_sex_coef_crude_male, identities, "income_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "income_exp", Exposure ) & !grepl( "Female", Exposure ), 
+                             paste0( Exposure, "_Male" ), Exposure ) )
+
+results_cc_income_by_sex_pr_crude_female <- extract_results_pr_crude( results_cc_income_by_sex_coef_crude_female, identities, "income_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "income_exp", Exposure ) & !grepl( "Male", Exposure ), 
+                             paste0( Exposure, "_Female" ), Exposure ) )
+
+results_cc_income_by_sex_pr_crude <- rbind( results_cc_income_by_sex_pr_crude_male, results_cc_income_by_sex_pr_crude_female )
+
+
+##### exposure of interest: marital status #####
+
+exposures_marital_status <- c( "marital_status_expNever married", "marital_status_expOther" )
+
+# extract coefficient and 95% CI
+results_cc_marital_status_coef_crude <- list()
+
+for ( outcome in names( all_models_cc_crude$marital_status ) ) {
+  results_cc_marital_status_coef_crude[[ outcome ]] <- extract_results_coef_crude(
+    all_models_list = all_models_cc_crude, 
+    exposure = "marital_status", 
+    outcome = outcome, 
+    variables = exposures_marital_status
+  )
+}
+
+# extract proportion ratio and 95% CI
+results_cc_marital_status_pr_crude <- extract_results_pr_crude( results_cc_marital_status_coef_crude, identities, "marital_status" )
+
+
+########## Adjusted analyses ##########
+
+##### exposure of interest: age #####
+
+# extract coefficient and 95% CI
+results_cc_age_coef <- list()
+
+for ( outcome in names( all_models_cc$age ) ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_age_coef[[ key ]] <- extract_results_coef(
+      all_models_list = all_models_cc, 
+      exposure = "age", 
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_age
+    )
+  }
+}
+
+# extract proportion ratio and 95% CI from each model across outcomes
+results_cc_age_pr_poisson_model_1 <- extract_results_pr( results_cc_age_coef, "model_1_poisson", identities, "age" )
+colnames( results_cc_age_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_age_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_age_pr_poisson_model_2 <- extract_results_pr( results_cc_age_coef, "model_2_poisson", identities, "age" )
+colnames( results_cc_age_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_age_pr_poisson_model_2 )[-1], "_model_2")
+
+results_cc_age_pr_poisson <- merge( results_cc_age_pr_poisson_model_1, results_cc_age_pr_poisson_model_2, by = "Exposure" )
+
+results_cc_age_pr_log_binomial_model_2 <- extract_results_pr( results_cc_age_coef, "model_2_log_binomial", identities, "age" )
+results_cc_age_pr_logistic_model_2 <- extract_results_pr( results_cc_age_coef, "model_2_logistic", identities, "age" )
+
+
+##### exposure of interest: age by sex #####
+
+# extract coefficient and 95% CI among males
+results_cc_age_coef_male <- list()
+
+for ( outcome in names( all_models_cc$age_by_sex ) ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_age_coef_male[[ key ]] <- extract_results_coef(
+      all_models_list = all_models_cc, 
+      exposure = "age_by_sex", 
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_age_male
+    )
+  }
+}
+
+# extract coefficient and 95% CI among females
+results_cc_age_coef_female <- list()
+
+for ( outcome in names( refit_model_cc_by_sex$age_by_sex ) ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_age_coef_female[[ key ]] <- extract_results_coef(
+      all_models_list = refit_model_cc_by_sex, 
+      exposure = "age_by_sex", 
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_age_female
+    )
+  }
+}
+
+# extract proportion ratio and 95% CI from each model across outcomes
+# results from poisson regression
+results_cc_age_pr_poisson_male_model_1 <- extract_results_pr( results_cc_age_coef_male, "model_1_poisson", identities, "age_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Female", Exposure ), 
+                             paste0( Exposure, "_Male" ), Exposure ) )
+
+results_cc_age_pr_poisson_male_model_2 <- extract_results_pr( results_cc_age_coef_male, "model_2_poisson", identities, "age_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Female", Exposure ), 
+                             paste0( Exposure, "_Male" ), Exposure ) )
+
+results_cc_age_pr_poisson_female_model_1 <- extract_results_pr( results_cc_age_coef_female, "model_1_poisson", identities, "age_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Male", Exposure ), 
+                             paste0( Exposure, "_Female" ), Exposure ) )
+
+results_cc_age_pr_poisson_female_model_2 <- extract_results_pr( results_cc_age_coef_female, "model_2_poisson", identities, "age_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Male", Exposure ), 
+                             paste0( Exposure, "_Female" ), Exposure ) )
+
+results_cc_age_by_sex_pr_poisson_model_1 <- rbind( results_cc_age_pr_poisson_male_model_1[ c( 1:3 ), ], results_cc_age_pr_poisson_female_model_1[ c( 1:3 ), ] )
+colnames( results_cc_age_by_sex_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_age_by_sex_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_age_by_sex_pr_poisson_model_2 <- rbind( results_cc_age_pr_poisson_male_model_2[ c( 1:3 ), ], results_cc_age_pr_poisson_female_model_2[ c( 1:3 ), ] )
+colnames( results_cc_age_by_sex_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_age_by_sex_pr_poisson_model_2 )[-1], "_model_2" )
+
+results_cc_age_by_sex_pr_poisson <- merge( results_cc_age_by_sex_pr_poisson_model_1, results_cc_age_by_sex_pr_poisson_model_2, by = "Exposure" )
+
+
+# results from log binomial regression
+results_cc_age_pr_log_binomial_male_model_2 <- extract_results_pr( results_cc_age_coef_male, "model_2_log_binomial", identities, "age_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Female", Exposure ), 
+                             paste0( Exposure, "_Male" ), Exposure ) )
+
+results_cc_age_pr_log_binomial_female_model_2 <- extract_results_pr( results_cc_age_coef_female, "model_2_log_binomial", identities, "age_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Male", Exposure ), 
+                             paste0( Exposure, "_Female" ), Exposure ) )
+
+results_cc_age_by_sex_pr_log_binomial_model_2 <- rbind( results_cc_age_pr_log_binomial_male_model_2[ c( 1:3 ), ], 
+                                                        results_cc_age_pr_log_binomial_female_model_2[ c( 1:3 ), ] )
+
+
+# results from logistic regression
+results_cc_age_pr_logistic_male_model_2 <- extract_results_pr( results_cc_age_coef_male, "model_2_logistic", identities, "age_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Female", Exposure ), 
+                             paste0( Exposure, "_Male" ), Exposure ) )
+
+results_cc_age_pr_logistic_female_model_2 <- extract_results_pr( results_cc_age_coef_female, "model_2_logistic", identities, "age_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Male", Exposure ), 
+                             paste0( Exposure, "_Female" ), Exposure ) )
+
+results_cc_age_by_sex_pr_logistic_model_2 <- rbind( results_cc_age_pr_logistic_male_model_2[ c( 1:3 ), ], 
+                                                    results_cc_age_pr_logistic_female_model_2[ c( 1:3 ), ] )
+
+
+##### exposure of interest: sex #####
+
+# extract coefficient and 95% CI
+results_cc_sex_coef <- list()
+
+for ( outcome in names( all_models_cc$sex ) ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_sex_coef[[ key ]] <- extract_results_coef(
+      all_models_list = all_models_cc, 
+      exposure = "sex", 
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_sex
+    )
+  }
+}
+
+# extract proportion ratio and 95% CI from each model across outcomes
+results_cc_sex_pr_poisson_model_1 <- extract_results_pr( results_cc_sex_coef, "model_1_poisson", identities, "sex" )
+colnames( results_cc_sex_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_sex_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_sex_pr_poisson_model_2 <- extract_results_pr( results_cc_sex_coef, "model_2_poisson", identities, "sex" )
+colnames( results_cc_sex_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_sex_pr_poisson_model_2 )[-1], "_model_2")
+
+results_cc_sex_pr_poisson <- merge( results_cc_sex_pr_poisson_model_1, results_cc_sex_pr_poisson_model_2, by = "Exposure" )
+
+results_cc_sex_pr_log_binomial_model_2 <- extract_results_pr( results_cc_sex_coef, "model_2_log_binomial", identities, "sex" )
+results_cc_sex_pr_logistic_model_2 <- extract_results_pr( results_cc_sex_coef, "model_2_logistic", identities, "sex" )
+
+
+##### exposure of interest: country of birth #####
+
+# extract coefficient and 95% CI
+results_cc_country_of_birth_coef <- list()
+
+for ( outcome in names( all_models_cc$country_of_birth ) ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_country_of_birth_coef[[ key ]] <- extract_results_coef(
+      all_models_list = all_models_cc, 
+      exposure = "country_of_birth", 
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_country_of_birth
+    )
+  }
+}
+
+# extract proportion ratio and 95% CI from each model across outcomes
+results_cc_country_of_birth_pr_poisson_model_1 <- extract_results_pr( results_cc_country_of_birth_coef, "model_1_poisson", identities, "country_of_birth" )
+colnames( results_cc_country_of_birth_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_country_of_birth_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_country_of_birth_pr_poisson_model_2 <- extract_results_pr( results_cc_country_of_birth_coef, "model_2_poisson", identities, "country_of_birth" )
+colnames( results_cc_country_of_birth_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_country_of_birth_pr_poisson_model_2 )[-1], "_model_2")
+
+results_cc_country_of_birth_pr_poisson <- merge( results_cc_country_of_birth_pr_poisson_model_1, results_cc_country_of_birth_pr_poisson_model_2, by = "Exposure" )
+
+results_cc_country_of_birth_pr_log_binomial_model_2 <- extract_results_pr( results_cc_country_of_birth_coef, "model_2_log_binomial", identities, "country_of_birth" )
+results_cc_country_of_birth_pr_logistic_model_2 <- extract_results_pr( results_cc_country_of_birth_coef, "model_2_logistic", identities, "country_of_birth" )
+
+
+##### exposure of interest: education #####
+
+# extract coefficient and 95% CI
+results_cc_education_coef <- list()
+
+for ( outcome in names( all_models_cc$education ) ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_education_coef[[ key ]] <- extract_results_coef(
+      all_models_list = all_models_cc, 
+      exposure = "education", 
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_education
+    )
+  }
+}
+
+# extract proportion ratio and 95% CI from each model across outcomes
+results_cc_education_pr_poisson_model_1 <- extract_results_pr( results_cc_education_coef, "model_1_poisson", identities, "education" )
+colnames( results_cc_education_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_education_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_education_pr_poisson_model_2 <- extract_results_pr( results_cc_education_coef, "model_2_poisson", identities, "education" )
+colnames( results_cc_education_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_education_pr_poisson_model_2 )[-1], "_model_2")
+
+results_cc_education_pr_poisson <- merge( results_cc_education_pr_poisson_model_1, results_cc_education_pr_poisson_model_2, by = "Exposure" )
+
+results_cc_education_pr_log_binomial_model_2 <- extract_results_pr( results_cc_education_coef, "model_2_log_binomial", identities, "education" )
+results_cc_education_pr_logistic_model_2 <- extract_results_pr( results_cc_education_coef, "model_2_logistic", identities, "education" )
+
+
+##### exposure of interest: education by sex #####
+
+# extract coefficient and 95% CI among males
+results_cc_education_coef_male <- list()
+
+for ( outcome in names( all_models_cc$education_by_sex ) ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_education_coef_male[[ key ]] <- extract_results_coef(
+      all_models_list = all_models_cc, 
+      exposure = "education_by_sex", 
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_education
+    )
+  }
+}
+
+# extract coefficient and 95% CI among females
+results_cc_education_coef_female <- list()
+
+for ( outcome in names( refit_model_cc_by_sex$education_by_sex ) ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_education_coef_female[[ key ]] <- extract_results_coef(
+      all_models_list = refit_model_cc_by_sex, 
+      exposure = "education_by_sex", 
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_education
+    )
+  }
+}
+
+# extract proportion ratio and 95% CI from each model across outcomes
+# results from poisson regression
+results_cc_education_pr_poisson_male_model_1 <- extract_results_pr( results_cc_education_coef_male, "model_1_poisson", identities, "education_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "education_exp", Exposure ) & !grepl( "Female", Exposure ), 
+                             paste0( Exposure, "_Male" ), Exposure ) )
+
+results_cc_education_pr_poisson_male_model_2 <- extract_results_pr( results_cc_education_coef_male, "model_2_poisson", identities, "education_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "education_exp", Exposure ) & !grepl( "Female", Exposure ), 
+                             paste0( Exposure, "_Male" ), Exposure ) )
+
+results_cc_education_pr_poisson_female_model_1 <- extract_results_pr( results_cc_education_coef_female, "model_1_poisson", identities, "education_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "education_exp", Exposure ) & !grepl( "Male", Exposure ), 
+                             paste0( Exposure, "_Female" ), Exposure ) )
+
+results_cc_education_pr_poisson_female_model_2 <- extract_results_pr( results_cc_education_coef_female, "model_2_poisson", identities, "education_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "education_exp", Exposure ) & !grepl( "Male", Exposure ), 
+                             paste0( Exposure, "_Female" ), Exposure ) )
+
+results_cc_education_by_sex_pr_poisson_model_1 <- rbind( results_cc_education_pr_poisson_male_model_1, results_cc_education_pr_poisson_female_model_1 )
+colnames( results_cc_education_by_sex_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_education_by_sex_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_education_by_sex_pr_poisson_model_2 <- rbind( results_cc_education_pr_poisson_male_model_2, results_cc_education_pr_poisson_female_model_2 )
+colnames( results_cc_education_by_sex_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_education_by_sex_pr_poisson_model_2 )[-1], "_model_2" )
+
+results_cc_education_by_sex_pr_poisson <- merge( results_cc_education_by_sex_pr_poisson_model_1, results_cc_education_by_sex_pr_poisson_model_2, by = "Exposure" )
+
+
+# results from log binomial regression
+results_cc_education_pr_log_binomial_male_model_2 <- extract_results_pr( results_cc_education_coef_male, "model_2_log_binomial", identities, "education_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "education_exp", Exposure ) & !grepl( "Female", Exposure ), 
+                             paste0( Exposure, "_Male" ), Exposure ) )
+
+results_cc_education_pr_log_binomial_female_model_2 <- extract_results_pr( results_cc_education_coef_female, "model_2_log_binomial", identities, "education_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "education_exp", Exposure ) & !grepl( "Male", Exposure ), 
+                             paste0( Exposure, "_Female" ), Exposure ) )
+
+results_cc_education_by_sex_pr_log_binomial_model_2 <- rbind( results_cc_education_pr_log_binomial_male_model_2, 
+                                                        results_cc_education_pr_log_binomial_female_model_2 )
+
+
+# results from logistic regression
+results_cc_education_pr_logistic_male_model_2 <- extract_results_pr( results_cc_education_coef_male, "model_2_logistic", identities, "education_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "education_exp", Exposure ) & !grepl( "Female", Exposure ), 
+                             paste0( Exposure, "_Male" ), Exposure ) )
+
+results_cc_education_pr_logistic_female_model_2 <- extract_results_pr( results_cc_education_coef_female, "model_2_logistic", identities, "education_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "education_exp", Exposure ) & !grepl( "Male", Exposure ), 
+                             paste0( Exposure, "_Female" ), Exposure ) )
+
+results_cc_education_by_sex_pr_logistic_model_2 <- rbind( results_cc_education_pr_logistic_male_model_2, 
+                                                    results_cc_education_pr_logistic_female_model_2 )
+
+
+##### exposure of interest: income #####
+
+# extract coefficient and 95% CI
+results_cc_income_coef <- list()
+
+for ( outcome in names( all_models_cc$income ) ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_income_coef[[ key ]] <- extract_results_coef(
+      all_models_list = all_models_cc, 
+      exposure = "income", 
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_income
+    )
+  }
+}
+
+# extract proportion ratio and 95% CI from each model across outcomes
+results_cc_income_pr_poisson_model_1 <- extract_results_pr( results_cc_income_coef, "model_1_poisson", identities, "income" )
+colnames( results_cc_income_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_income_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_income_pr_poisson_model_2 <- extract_results_pr( results_cc_income_coef, "model_2_poisson", identities, "income" )
+colnames( results_cc_income_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_income_pr_poisson_model_2 )[-1], "_model_2")
+
+results_cc_income_pr_poisson <- merge( results_cc_income_pr_poisson_model_1, results_cc_income_pr_poisson_model_2, by = "Exposure" )
+
+results_cc_income_pr_log_binomial_model_2 <- extract_results_pr( results_cc_income_coef, "model_2_log_binomial", identities, "income" )
+results_cc_income_pr_logistic_model_2 <- extract_results_pr( results_cc_income_coef, "model_2_logistic", identities, "income" )
+
+
+##### exposure of interest: income by sex #####
+
+# extract coefficient and 95% CI among males
+results_cc_income_coef_male <- list()
+
+for ( outcome in names( all_models_cc$income_by_sex ) ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_income_coef_male[[ key ]] <- extract_results_coef(
+      all_models_list = all_models_cc, 
+      exposure = "income_by_sex", 
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_income
+    )
+  }
+}
+
+# extract coefficient and 95% CI among females
+results_cc_income_coef_female <- list()
+
+for ( outcome in names( refit_model_cc_by_sex$income_by_sex ) ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_income_coef_female[[ key ]] <- extract_results_coef(
+      all_models_list = refit_model_cc_by_sex, 
+      exposure = "income_by_sex", 
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_income
+    )
+  }
+}
+
+# extract proportion ratio and 95% CI from each model across outcomes
+# results from poisson regression
+results_cc_income_pr_poisson_male_model_1 <- extract_results_pr( results_cc_income_coef_male, "model_1_poisson", identities, "income_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "income_exp", Exposure ) & !grepl( "Female", Exposure ), 
+                             paste0( Exposure, "_Male" ), Exposure ) )
+
+results_cc_income_pr_poisson_male_model_2 <- extract_results_pr( results_cc_income_coef_male, "model_2_poisson", identities, "income_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "income_exp", Exposure ) & !grepl( "Female", Exposure ), 
+                             paste0( Exposure, "_Male" ), Exposure ) )
+
+results_cc_income_pr_poisson_female_model_1 <- extract_results_pr( results_cc_income_coef_female, "model_1_poisson", identities, "income_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "income_exp", Exposure ) & !grepl( "Male", Exposure ), 
+                             paste0( Exposure, "_Female" ), Exposure ) )
+
+results_cc_income_pr_poisson_female_model_2 <- extract_results_pr( results_cc_income_coef_female, "model_2_poisson", identities, "income_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "income_exp", Exposure ) & !grepl( "Male", Exposure ), 
+                             paste0( Exposure, "_Female" ), Exposure ) )
+
+results_cc_income_by_sex_pr_poisson_model_1 <- rbind( results_cc_income_pr_poisson_male_model_1, results_cc_income_pr_poisson_female_model_1 )
+colnames( results_cc_income_by_sex_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_income_by_sex_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_income_by_sex_pr_poisson_model_2 <- rbind( results_cc_income_pr_poisson_male_model_2, results_cc_income_pr_poisson_female_model_2 )
+colnames( results_cc_income_by_sex_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_income_by_sex_pr_poisson_model_2 )[-1], "_model_2" )
+
+results_cc_income_by_sex_pr_poisson <- merge( results_cc_income_by_sex_pr_poisson_model_1, results_cc_income_by_sex_pr_poisson_model_2, by = "Exposure" )
+
+
+# results from log binomial regression
+results_cc_income_pr_log_binomial_male_model_2 <- extract_results_pr( results_cc_income_coef_male, "model_2_log_binomial", identities, "income_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "income_exp", Exposure ) & !grepl( "Female", Exposure ), 
+                             paste0( Exposure, "_Male" ), Exposure ) )
+
+results_cc_income_pr_log_binomial_female_model_2 <- extract_results_pr( results_cc_income_coef_female, "model_2_log_binomial", identities, "income_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "income_exp", Exposure ) & !grepl( "Male", Exposure ), 
+                             paste0( Exposure, "_Female" ), Exposure ) )
+
+results_cc_income_by_sex_pr_log_binomial_model_2 <- rbind( results_cc_income_pr_log_binomial_male_model_2, 
+                                                              results_cc_income_pr_log_binomial_female_model_2 )
+
+
+# results from logistic regression
+results_cc_income_pr_logistic_male_model_2 <- extract_results_pr( results_cc_income_coef_male, "model_2_logistic", identities, "income_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "income_exp", Exposure ) & !grepl( "Female", Exposure ), 
+                             paste0( Exposure, "_Male" ), Exposure ) )
+
+results_cc_income_pr_logistic_female_model_2 <- extract_results_pr( results_cc_income_coef_female, "model_2_logistic", identities, "income_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "income_exp", Exposure ) & !grepl( "Male", Exposure ), 
+                             paste0( Exposure, "_Female" ), Exposure ) )
+
+results_cc_income_by_sex_pr_logistic_model_2 <- rbind( results_cc_income_pr_logistic_male_model_2, 
+                                                          results_cc_income_pr_logistic_female_model_2 )
+
+
+##### exposure of interest: marital status #####
+
+# extract coefficient and 95% CI
+results_cc_marital_status_coef <- list()
+
+for ( outcome in names( all_models_cc$marital_status ) ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_marital_status_coef[[ key ]] <- extract_results_coef(
+      all_models_list = all_models_cc, 
+      exposure = "marital_status", 
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_marital_status
+    )
+  }
+}
+
+# extract proportion ratio and 95% CI from each model across outcomes
+results_cc_marital_status_pr_poisson_model_1 <- extract_results_pr( results_cc_marital_status_coef, "model_1_poisson", identities, "marital_status" )
+colnames( results_cc_marital_status_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_marital_status_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_marital_status_pr_poisson_model_2 <- extract_results_pr( results_cc_marital_status_coef, "model_2_poisson", identities, "marital_status" )
+colnames( results_cc_marital_status_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_marital_status_pr_poisson_model_2 )[-1], "_model_2")
+
+results_cc_marital_status_pr_poisson <- merge( results_cc_marital_status_pr_poisson_model_1, results_cc_marital_status_pr_poisson_model_2, by = "Exposure" )
+
+results_cc_marital_status_pr_log_binomial_model_2 <- extract_results_pr( results_cc_marital_status_coef, "model_2_log_binomial", identities, "marital_status" )
+results_cc_marital_status_pr_logistic_model_2 <- extract_results_pr( results_cc_marital_status_coef, "model_2_logistic", identities, "marital_status" )
+
+
+##### combine results #####
+
+results_cc_pr_crude <- rbind( results_cc_age_pr_crude,
+                              results_cc_age_by_sex_pr_crude,
+                              results_cc_sex_pr_crude,
+                              results_cc_country_of_birth_pr_crude,
+                              results_cc_education_pr_crude,
+                              results_cc_education_by_sex_pr_crude,
+                              results_cc_income_pr_crude,
+                              results_cc_income_by_sex_pr_crude,
+                              results_cc_marital_status_pr_crude
+)
+
+results_cc_pr_poisson <- rbind( results_cc_age_pr_poisson,
+                                results_cc_age_by_sex_pr_poisson,
+                                results_cc_sex_pr_poisson,
+                                results_cc_country_of_birth_pr_poisson,
+                                results_cc_education_pr_poisson,
+                                results_cc_education_by_sex_pr_poisson,
+                                results_cc_income_pr_poisson,
+                                results_cc_income_by_sex_pr_poisson,
+                                results_cc_marital_status_pr_poisson
+)
+
+writexl::write_xlsx( merge( results_cc_pr_crude, results_cc_pr_poisson, by = "Exposure" ),
+                     "results_cc_pr_poisson_2021.xlsx" )
+
+results_cc_pr_log_binomial <- rbind( results_cc_age_pr_log_binomial_model_2,
+                                     results_cc_age_by_sex_pr_log_binomial_model_2,
+                                     results_cc_sex_pr_log_binomial_model_2,
+                                     results_cc_country_of_birth_pr_log_binomial_model_2,
+                                     results_cc_education_pr_log_binomial_model_2,
+                                     results_cc_education_by_sex_pr_log_binomial_model_2,
+                                     results_cc_income_pr_log_binomial_model_2,
+                                     results_cc_income_by_sex_pr_log_binomial_model_2,
+                                     results_cc_marital_status_pr_log_binomial_model_2
+)
+
+results_cc_pr_logistic <- rbind( results_cc_age_pr_logistic_model_2,
+                                 results_cc_age_by_sex_pr_logistic_model_2,
+                                 results_cc_sex_pr_logistic_model_2,
+                                 results_cc_country_of_birth_pr_logistic_model_2,
+                                 results_cc_education_pr_logistic_model_2,
+                                 results_cc_education_by_sex_pr_logistic_model_2,
+                                 results_cc_income_pr_logistic_model_2,
+                                 results_cc_income_by_sex_pr_logistic_model_2,
+                                 results_cc_marital_status_pr_logistic_model_2
+)
+
+colnames( results_cc_pr_poisson )[-1] <- paste0( colnames( results_cc_pr_poisson )[-1], "_poisson")
+colnames( results_cc_pr_log_binomial )[-1] <- paste0( colnames( results_cc_pr_log_binomial )[-1], "_log_binomial")
+colnames( results_cc_pr_logistic )[-1] <- paste0( colnames( results_cc_pr_logistic )[-1], "_logistic")
+
+results_cc_pr_all_models_2021 <- results_cc_pr_poisson %>%
+  full_join( results_cc_pr_log_binomial, by = "Exposure" ) %>%
+  full_join( results_cc_pr_logistic, by = "Exposure" )
+
+writexl::write_xlsx( results_cc_pr_all_models_2021, "results_cc_pr_all_models_2021.xlsx" )
+```
+
+#### 6.2. Survey analyses of imputed datasets
+##### 6.2.1. Unadjusted analyses
+```{r}
+exposures <- c( "age", "age_by_sex", "sex", "country_of_birth", "education", "income", "marital_status" )
+
+# fit Poisson regression model for each exposure and each outcome
+pr_imp_crude <- list()
+
+for ( exposure in exposures ) {
+  pr_imp_crude[[ exposure ]] <- list()
+  
+  fml_list_name <- paste( "fml_list", exposure, "crude", sep = "_" )
+  
+  for ( name in names( get( fml_list_name ) ) ) {
+    pr_imp_crude[[ exposure ]][[ name ]] <- fit_model_imp( formula = get( fml_list_name )[[ name ]],
+                                                           design = survey_design_imp,
+                                                           year = 2021 )
+  }
+}
+
+# refit the model for age by sex, using female as the reference group
+# to extract results for age among females
+implist_2021_transformed_refit <- lapply( implist_2021_transformed, function( df ) {
+  within( df, {
+    sex_exp = relevel( sex_exp, ref = "Female" )
+  } )
+} )
+
+survey_design_imp_refit <- svydesign( ids = ~ 1,
+                                      strata = ~ sampling_strata_region,
+                                      weights = ~ calibrated_weight,
+                                      fpc = ~ no.of.population,
+                                      data = imputationList( implist_2021_transformed_refit )
+                                      ) # without pre-calibration
+
+pr_age_by_sex_imp_crude_refit <- list()
+
+for ( name in names( fml_list_age_by_sex_crude ) ) {
+  pr_age_by_sex_imp_crude_refit[[ name ]] <- fit_model_imp( formula = fml_list_age_by_sex_crude[[ name ]],
+                                                            design = survey_design_imp_refit,
+                                                            year = 2021 )
+}
+```
+
+##### 6.2.2. Adjusted analyses
+```{r}
+# fit Poisson regression model for each exposure and each outcome
+pr_imp_adjusted <- list()
+
+for ( exposure in exposures ) {
+  pr_imp_adjusted[[ exposure ]] <- list()
+  
+  fml_list_name <- paste( "fml_list", exposure, sep = "_" )
+  
+  for ( name in names( get( fml_list_name ) ) ) {
+    pr_imp_adjusted[[ exposure ]][[ name ]] <- fit_model_imp( formula = get( fml_list_name )[[ name ]],
+                                                              design = survey_design_imp,
+                                                              year = 2021 )
+  }
+}
+
+# refit the model for age by sex, using female as the reference group
+# to extract results for age among females
+pr_age_by_sex_imp_adjusted_refit <- list()
+
+for ( name in names( fml_list_age_by_sex ) ) {
+  pr_age_by_sex_imp_adjusted_refit[[ name ]] <- fit_model_imp( formula = fml_list_age_by_sex[[ name ]],
+                                                               design = survey_design_imp_refit,
+                                                               year = 2021 )
+}
+```
+
+##### 6.2.3. Extract results
+```{r}
+identities <- c( "sexual_minority", "homosexual", "bisexual", "other" )
+exposures <- c( "age", "sex", "country_of_birth", "education", "income", "marital_status" )
+
+exposures_age <- c( "age_exp16-29", "age_exp30-44", "age_exp>=60"  )
+exposures_sex <- c( "sex_expFemale" )
+exposures_country_of_birth <- c( "country_of_birth_expEurope", "country_of_birth_expOutside Europe" )
+exposures_education <- c( "education_exp<=9 years", "education_exp10-12 years" )
+exposures_income <- c( "income_exp<=2,500", "income_exp(2,500, 3,500]", "income_exp(3,500, 4,500]" )
+exposures_marital_status <- c( "marital_status_expNever married", "marital_status_expOther" )
+
+
+########## Crude analyses ##########
+
+crude_model_most <- list()
+
+for( cat in exposures ){
+  crude_model_most[[ cat ]] <- extract_model_imp( model_results = pr_imp_crude,
+                                                  exposure = cat,
+                                                  sexual_identities = identities,
+                                                  model_type = "crude",
+                                                  variables = get( paste( "exposures", cat, sep = "_" ) ) )
+}
+
+results_crude_model_most <- do.call( rbind, crude_model_most )
+rownames( results_crude_model_most ) <- NULL
+
+# among males
+results_crude_model_male <- extract_model_imp( model_results = pr_imp_crude,
+                                               exposure = "age_by_sex",
+                                               sexual_identities = identities,
+                                               model_type = "crude",
+                                               variables = exposures_age )
+
+results_crude_model_male$subgroup <- paste( "male_", results_crude_model_male$subgroup )
+
+# among females
+results_crude_model_female <- extract_model_imp_age_by_sex( 
+  model_results = pr_age_by_sex_imp_crude_refit,
+  exposure = "age_by_sex",
+  sexual_identities = identities,
+  model_type = "crude",
+  variables = exposures_age )
+
+results_crude_model_female$subgroup <- paste( "female_", results_crude_model_female$subgroup )
+
+# merge datasets
+results_crude_model_summary <- rbind( results_crude_model_most, results_crude_model_male, results_crude_model_female )
+
+
+########## Adjusted analyses ##########
+
+##### Model 1 #####
+adjusted_model_1_most <- list()
+
+for( cat in exposures ){
+  adjusted_model_1_most[[ cat ]] <- extract_model_imp( 
+    model_results = pr_imp_adjusted,
+    exposure = cat,
+    sexual_identities = identities,
+    model_type = "model_1",
+    variables = get( paste( "exposures", cat, sep = "_" ) ) )
+}
+
+results_adjusted_model_1_most <- do.call( rbind, adjusted_model_1_most )
+rownames( results_adjusted_model_1_most ) <- NULL
+
+# among males
+results_adjusted_model_1_male <- extract_model_imp( 
+  model_results = pr_imp_adjusted,
+  exposure = "age_by_sex",
+  sexual_identities = identities,
+  model_type = "model_1",
+  variables = exposures_age )
+
+results_adjusted_model_1_male$subgroup <- paste( "male_", results_adjusted_model_1_male$subgroup )
+
+# among females
+results_adjusted_model_1_female <- extract_model_imp_age_by_sex( 
+  model_results = pr_age_by_sex_imp_adjusted_refit,
+  exposure = "age_by_sex",
+  sexual_identities = identities,
+  model_type = "model_1",
+  variables = exposures_age )
+
+results_adjusted_model_1_female$subgroup <- paste( "female_", results_adjusted_model_1_female$subgroup )
+
+# merge datasets
+results_adjusted_model_1_summary <- rbind( results_adjusted_model_1_most, results_adjusted_model_1_male, results_adjusted_model_1_female )
+
+
+##### Model 2 #####
+adjusted_model_2_most <- list()
+
+for( cat in exposures ){
+  adjusted_model_2_most[[ cat ]] <- extract_model_imp( 
+    model_results = pr_imp_adjusted,
+    exposure = cat,
+    sexual_identities = identities,
+    model_type = "model_2",
+    variables = get( paste( "exposures", cat, sep = "_" ) ) )
+}
+
+results_adjusted_model_2_most <- do.call( rbind, adjusted_model_2_most )
+rownames( results_adjusted_model_2_most ) <- NULL
+
+# among males
+results_adjusted_model_2_male <- extract_model_imp( 
+  model_results = pr_imp_adjusted,
+  exposure = "age_by_sex",
+  sexual_identities = identities,
+  model_type = "model_2",
+  variables = exposures_age )
+
+results_adjusted_model_2_male$subgroup <- paste( "male_", results_adjusted_model_2_male$subgroup )
+
+# among females
+results_adjusted_model_2_female <- extract_model_imp_age_by_sex( 
+  model_results = pr_age_by_sex_imp_adjusted_refit,
+  exposure = "age_by_sex",
+  sexual_identities = identities,
+  model_type = "model_2",
+  variables = exposures_age )
+
+results_adjusted_model_2_female$subgroup <- paste( "female_", results_adjusted_model_2_female$subgroup )
+
+# merge datasets
+results_adjusted_model_2_summary <- rbind( results_adjusted_model_2_most, results_adjusted_model_2_male, results_adjusted_model_2_female )
+
+
+# export results
+results_imp_pr_poisson_2021 <- merge( results_crude_model_summary,
+                                      merge( results_adjusted_model_1_summary, 
+                                             results_adjusted_model_2_summary, 
+                                             by = "subgroup" ), 
+                                      by = "subgroup" )
+
+writexl::write_xlsx( results_imp_pr_poisson_2021, "results_imp_pr_poisson_2021.xlsx" )
+```
+
+```{r}
+# check status
+renv::status()
+
+# record R package versions
+renv::snapshot()
+```
