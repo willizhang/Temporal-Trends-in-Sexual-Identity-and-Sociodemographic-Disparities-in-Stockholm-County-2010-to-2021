@@ -29,9 +29,9 @@ prop_imp_summary_2010 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/
 prop_imp_summary_2014 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_summary_2014.xlsx")
 prop_imp_summary_2021 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_summary_2021.xlsx")
 
-prop_imp_summary_2010 <- prop_imp_summary_2010 %>% slice( -c( 5:9 ) )
-prop_imp_summary_2014 <- prop_imp_summary_2014 %>% slice( -c( 5:10 ) )
-prop_imp_summary_2021 <- prop_imp_summary_2021 %>% slice( -c( 5:10 ) )
+prop_imp_summary_2010 <- prop_imp_summary_2010 %>% slice( -c( 5:14 ) )
+prop_imp_summary_2014 <- prop_imp_summary_2014 %>% slice( -c( 5:16 ) )
+prop_imp_summary_2021 <- prop_imp_summary_2021 %>% slice( -c( 5:16 ) )
 
 # to make it easier to combine across datasets
 # a note on these changes will be added on the graph later
@@ -1655,16 +1655,16 @@ p_imp_age_sex <- add_border(
 plot( p_imp_age_sex )
 ```
 
-#### 2.7. By generation
+#### 2.7. By generation and sex
 ```{r}
 # datasets for proportion of sexual identity
-prop_imp_summary_2010_generation <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_cc_summary_2010.xlsx")
-prop_imp_summary_2014_generation <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_cc_summary_2014.xlsx")
-prop_imp_summary_2021_generation <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_cc_summary_2021.xlsx")
+prop_imp_summary_2010_generation <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_summary_2010.xlsx")
+prop_imp_summary_2014_generation <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_summary_2014.xlsx")
+prop_imp_summary_2021_generation <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_summary_2021.xlsx")
 
-prop_imp_summary_2010_generation <- prop_imp_summary_2010_generation %>% slice( 7:16 )
-prop_imp_summary_2014_generation <- prop_imp_summary_2014_generation %>% slice( 7:18 )
-prop_imp_summary_2021_generation <- prop_imp_summary_2021_generation %>% slice( 7:18 )
+prop_imp_summary_2010_generation <- prop_imp_summary_2010_generation %>% slice( 5:14 )
+prop_imp_summary_2014_generation <- prop_imp_summary_2014_generation %>% slice( 5:16 )
+prop_imp_summary_2021_generation <- prop_imp_summary_2021_generation %>% slice( 5:16 )
 
 # merge datasets
 prop_imp_summary_generation <- prop_imp_summary_2010_generation %>%
@@ -1684,20 +1684,14 @@ long_data_generation <- prop_imp_summary_generation %>%
     ) %>%
   separate( year_identity, into = c( "identity", "year" ), sep = "_point_estimate_" )
 
-unique( long_data_generation$identity )
-long_data_generation$identity <- ifelse( long_data_generation$identity == "Uncertain" |
-                                           long_data_generation$identity == "None of the above", "Other",
-                                         long_data_generation$identity )
-table( long_data_generation$identity, useNA = "always" )
-  
 long_data_generation <- long_data_generation %>%
   mutate( identity = factor( identity, levels = c( "Heterosexual", "Bisexual", "Homosexual", "Other" ) ) )
-str( long_data_generation )
+summary( long_data_generation )
 
-# plot
-# for bisexual and homosexual
+
+# plotting for bisexual and homosexual identities
 ggplot( drop_na( long_data_generation %>% 
-                   filter( identity %in% c( "Homosexual", "Bisexual" ) ) ), 
+                   filter( identity %in% c( "Bisexual", "Homosexual" ) ) ),
         aes( x = year, y = proportion, color = generation, linetype = sex, group = interaction( generation, sex ) ) ) +
   
   geom_line( linewidth = 0.5 ) + 
@@ -1741,7 +1735,7 @@ ggplot( drop_na( long_data_generation %>%
     identity == "Bisexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.15 ), breaks = c( 0, 0.05, 0.1, 0.15 ) )
   ) )
 
-# for heterosexual and other
+# plotting for heterosexual and other identities
 ggplot( drop_na( long_data_generation %>% 
                    filter( identity %in% c( "Heterosexual", "Other" ) ) ), 
         aes( x = year, y = proportion, color = generation, linetype = sex, group = interaction( generation, sex ) ) ) +
@@ -1790,15 +1784,15 @@ ggplot( drop_na( long_data_generation %>%
 
 #### 2.8. Proportion by varing age cut-offs
 ```{r}
-prop_imp_age_iteration_2010 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_imp_age_iteration_2010.xlsx") %>%
+prop_imp_age_iteration_2010 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_age_iteration_2010.xlsx") %>%
   filter( subgroup == 'young' ) %>%
   select( -subgroup )
 
-prop_imp_age_iteration_2014 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_imp_age_iteration_2014.xlsx") %>%
+prop_imp_age_iteration_2014 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_age_iteration_2014.xlsx") %>%
   filter( subgroup == 'young' ) %>%
   select( -subgroup )
 
-prop_imp_age_iteration_2021 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_imp_age_iteration_2021.xlsx") %>%
+prop_imp_age_iteration_2021 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_age_iteration_2021.xlsx") %>%
   filter( subgroup == 'young' ) %>%
   select( -subgroup )
 
@@ -1861,25 +1855,33 @@ ggplot( long_data,
   )
 ```
 
-#### 2.9. By age group
+#### 2.9. By age group and sex
 ##### 2.9.1. Prepare dataset for plotting
 ```{r}
-prop_imp_age_group_2010 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_imp_age_group_2010.xlsx") %>%
+prop_imp_age_group_2010 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_age_group_sex_2010.xlsx") %>%
   select( "subgroup", "Heterosexual_point_estimate_2010", "Homosexual_point_estimate_2010", "Bisexual_point_estimate_2010", "Other_point_estimate_2010" )
 
-prop_imp_age_group_2014 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_imp_age_group_2014.xlsx") %>%
+prop_imp_age_group_2014 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_age_group_sex_2014.xlsx") %>%
   select( "subgroup", "Heterosexual_point_estimate_2014", "Homosexual_point_estimate_2014", "Bisexual_point_estimate_2014", "Other_point_estimate_2014" )
 
-prop_imp_age_group_2021 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_imp_age_group_2021.xlsx") %>%
+prop_imp_age_group_2021 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_age_group_sex_2021.xlsx") %>%
   select( "subgroup", "Heterosexual_point_estimate_2021", "Homosexual_point_estimate_2021", "Bisexual_point_estimate_2021", "Other_point_estimate_2021" )
 
-prop_imp_age_group_2010$subgroup[ prop_imp_age_group_2010$subgroup == "[17,19]" ] <- "(17,19]"
-prop_imp_age_group_2014$subgroup[ prop_imp_age_group_2014$subgroup == "[15,17]" ] <- "[16,17]"
-prop_imp_age_group_2021$subgroup[ prop_imp_age_group_2021$subgroup == "[15,17]" ] <- "[16,17]"
+prop_imp_age_group_2010$subgroup[ prop_imp_age_group_2010$subgroup == "[17,19].Male" ] <- "(17,19].Male"
+prop_imp_age_group_2010$subgroup[ prop_imp_age_group_2010$subgroup == "[17,19].Female" ] <- "(17,19].Female"
+
+prop_imp_age_group_2014$subgroup[ prop_imp_age_group_2014$subgroup == "[15,17].Male" ] <- "[16,17].Male"
+prop_imp_age_group_2014$subgroup[ prop_imp_age_group_2014$subgroup == "[15,17].Female" ] <- "[16,17].Female"
+
+prop_imp_age_group_2021$subgroup[ prop_imp_age_group_2021$subgroup == "[15,17].Male" ] <- "[16,17].Male"
+prop_imp_age_group_2021$subgroup[ prop_imp_age_group_2021$subgroup == "[15,17].Female" ] <- "[16,17].Female"
 
 prop_imp_age_group_merged <- prop_imp_age_group_2010 %>%
   full_join( prop_imp_age_group_2014, by = "subgroup" ) %>%
   full_join( prop_imp_age_group_2021, by = "subgroup" )
+
+prop_imp_age_group_merged <- prop_imp_age_group_merged %>% 
+  separate( subgroup, into = c( "subgroup", "sex" ), sep = "\\." )
 
 new_subgroup_label <- function( label ) {
   if ( startsWith( label, "(" ) ) {
@@ -1892,8 +1894,10 @@ new_subgroup_label <- function( label ) {
 }
 
 prop_imp_age_group_merged$new_subgroup <- sapply( prop_imp_age_group_merged$subgroup, new_subgroup_label )
-
 prop_imp_age_group_merged <- prop_imp_age_group_merged %>% relocate( new_subgroup, .after = subgroup )
+
+prop_imp_age_group_merged <- prop_imp_age_group_merged %>%
+  filter( !new_subgroup %in% c( "[80,105]", "[80,99]", "[80,100]" ) )
 
 age_group_order <- c( "[16,17]", "[18,19]", "[20,21]", "[22,23]", "[24,25]", "[26,27]", "[28,29]", "[30,31]", 
                       "[32,33]", "[34,35]", "[36,37]", "[38,39]", "[40,41]", "[42,43]", "[44,45]", "[46,47]", 
@@ -1904,7 +1908,7 @@ prop_imp_age_group_merged$new_subgroup <- factor( prop_imp_age_group_merged$new_
 
 long_data_age_group <- prop_imp_age_group_merged %>% 
   pivot_longer( 
-    cols = - c( subgroup, new_subgroup ), 
+    cols = - c( subgroup, new_subgroup, sex ), 
     names_to = c( "Sexuality", "Estimate_Type", "Year" ), 
     names_pattern = "([A-Za-z]+)_(\\w+)_(\\d+)", 
     values_to = "Value" 
@@ -1913,54 +1917,108 @@ long_data_age_group <- prop_imp_age_group_merged %>%
 
 ##### 2.9.2. Plotting
 ```{r}
-ggplot( long_data_age_group, 
-        aes( x = new_subgroup, y = Value, color = Sexuality, linetype = Year,  group = interaction( Sexuality, Year ) ) ) +
+# plotting for bisexual and homosexual identities
+ggplot( long_data_age_group %>%
+          filter( Sexuality %in% c( "Bisexual", "Homosexual" ) ), 
+        aes( x = new_subgroup, y = Value, color = sex, linetype = Year,  group = interaction( sex, Year ) ) ) +
   
-  geom_line( ) +
+  geom_line( linewidth = 0.5 ) +
   
-  scale_linetype_manual( values = c( "2010" = "dotdash", "2014" = "dashed", "2021" = "solid" ),
-                         labels = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ) 
-                         ) +
+  scale_y_continuous( labels = scales::percent ) +
   
-  scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#7CAE00", "#F8766D" ),
-                      breaks = c( "Heterosexual", "Homosexual", "Bisexual", "Other" ),
-                      labels = c( "Heterosexual", "Homosexual", "Bisexual", "Otherᵇ" )
-                      ) +
+  scale_linetype_manual( values = c( "dotdash", "dashed", "solid" ),
+                         breaks = c( "2010", "2014", "2021" ),
+                         labels = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ),
+                         guide = guide_legend( nrow = 3 )
+  ) +
   
-  scale_y_continuous( labels = scales::percent,
-                      limits = c( 0, 1 ), 
-                      breaks = c( 0, 0.05, 0.1, 0.15, 0.2, 0.8, 0.9, 1 )
-                      ) +
-  
-  scale_y_break( c( 0.19, 0.74 ), scales = 1, space = 0.3, expand = c( 0, 0 ) ) +
+  scale_color_manual( values = c( "#F8766D", "#00BFC4" ),
+                      breaks = c( "Female", "Male"),
+                      guide = guide_legend( nrow = 2 ) ) +
   
   labs( x = "Age group (years)ᵃ", 
         y = "Proportion"
         ) +
   
   theme_classic() +
-  
-  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
-         axis.title.y = element_text( family = "Arial", size = 11 ),
-         axis.title.x = element_text( family = "Arial", size = 11 ),
+  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
          axis.text.x = element_text( family = "Arial", size = 11, angle = 45, vjust = 0.5, hjust = 0.5 ),
+         axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
          legend.text = element_text( family = "Arial", size = 10 ),
-         legend.position = "right",
          legend.title = element_blank(),
-         axis.text.y.right = element_blank(),
-         axis.ticks.y.right = element_blank(),
-         axis.line.y.right = element_blank()
-         )
+         legend.position = "right",
+         strip.background = element_blank(),
+         strip.text = element_text( family = "Arial", size = 12 ),
+         panel.spacing = unit( 2, "lines" ) ) +
+  
+  facet_wrap( ~ Sexuality,
+              ncol = 1, 
+              scales = "free_y",
+              labeller = labeller( Sexuality = c( "Homosexual" = "Homosexual Identity",
+                                                  "Bisexual" = "Bisexual Identity" ) ) ) +
+  
+  ggh4x::facetted_pos_scales( y = list(
+    Sexuality == "Homosexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.08 ), breaks = c( 0, 0.02, 0.04, 0.06, 0.08 ) ),
+    Sexuality == "Bisexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.2 ), breaks = c( 0, 0.05, 0.1, 0.15, 0.2 ) )
+  ) )
+
+
+# plotting for heterosexual and other identities
+ggplot( long_data_age_group %>%
+          filter( Sexuality %in% c( "Heterosexual", "Other" ) ), 
+        aes( x = new_subgroup, y = Value, color = sex, linetype = Year,  group = interaction( sex, Year ) ) ) +
+  
+  geom_line( linewidth = 0.5 ) +
+  
+  scale_y_continuous( labels = scales::percent ) +
+  
+  scale_linetype_manual( values = c( "dotdash", "dashed", "solid" ),
+                         breaks = c( "2010", "2014", "2021" ),
+                         labels = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ),
+                         guide = guide_legend( nrow = 3 )
+  ) +
+  
+  scale_color_manual( values = c( "#F8766D", "#00BFC4" ),
+                      breaks = c( "Female", "Male"),
+                      guide = guide_legend( nrow = 2 ) ) +
+  
+  labs( x = "Age group (years)ᵇ", 
+        y = "Proportion"
+        ) +
+  
+  theme_classic() +
+  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11, angle = 45, vjust = 0.5, hjust = 0.5 ),
+         axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.title = element_blank(),
+         legend.position = "right",
+         strip.background = element_blank(),
+         strip.text = element_text( family = "Arial", size = 12 ),
+         panel.spacing = unit( 2, "lines" ) ) +
+  
+  facet_wrap( ~ Sexuality,
+              ncol = 1, 
+              scales = "free_y",
+              labeller = labeller( Sexuality = c( "Heterosexual" = "Heterosexual Identity",
+                                                  "Other" = "Other Identitiesᵃ" ) ) ) +
+  
+  ggh4x::facetted_pos_scales( y = list(
+    Sexuality == "Heterosexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0.6, 1 ), breaks = c( 0.6, 0.7, 0.8, 0.9, 1 ) ),
+    Sexuality == "Other" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.2 ), breaks = c( 0, 0.05, 0.1, 0.15, 0.2 ) )
+  ) )
 ```
 
 ### 3. Plots for Relation between Sexual Identity and Demographic Factors
 #### 3.1. Prepare dataset for plotting
 ```{r}
-results_imp_pr_poisson_2010 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/results_imp_pr_poisson_2010.xlsx")
+results_imp_pr_poisson_2010 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/results_imp_pr_poisson_2010.xlsx")
 
-results_imp_pr_poisson_2014 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/results_imp_pr_poisson_2014.xlsx")
+results_imp_pr_poisson_2014 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/results_imp_pr_poisson_2014.xlsx")
 
-results_imp_pr_poisson_2021 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/results_imp_pr_poisson_2021.xlsx")
+results_imp_pr_poisson_2021 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/results_imp_pr_poisson_2021.xlsx")
 
 # to make it easier to combine across datasets
 # a note on these changes will be added on the graph later
@@ -4722,1158 +4780,4 @@ p_imp_pr_poisson_other <- add_border(
 )
 
 plot( p_imp_pr_poisson_other )
-```
-
-### 4. Plots for Proportion of Change in Sexual Identity
-#### 4.1. Prepare dataset for plotting
-```{r}
-fluidity_imp_prop_summary_2010 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/fluidity_imp_prop_summary_2010.xlsx")
-fluidity_imp_prop_summary_2014 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/fluidity_imp_prop_summary_2014.xlsx")
-
-fluidity_imp_prop_summary_2010[ 4,1 ] <- "Other_identity"
-fluidity_imp_prop_summary_2010$subgroup[ fluidity_imp_prop_summary_2010$subgroup == "18-29" ] <- "16-29"
-fluidity_imp_prop_summary_2010$subgroup[ fluidity_imp_prop_summary_2010$subgroup == "18-29.Male" ] <- "16-29.Male"
-fluidity_imp_prop_summary_2010$subgroup[ fluidity_imp_prop_summary_2010$subgroup == "18-29.Female" ] <- "16-29.Female"
-
-fluidity_imp_prop_summary_2014[ 4,1 ] <- "Other_identity"
-
-# merge datasets
-fluidity_imp_prop_summary <- fluidity_imp_prop_summary_2010 %>% 
-  full_join( fluidity_imp_prop_summary_2014, by = "subgroup" )
-
-# modify table format
-desired_order <- c( "Heterosexual", "Homosexual", "Bisexual", "Other_identity", "Male", "Female", "16-29", "30-44", "45-59", ">=60", "16-29.Male", "30-44.Male", "45-59.Male", ">=60.Male", "16-29.Female", "30-44.Female", "45-59.Female", ">=60.Female", "Sweden", "Europe", "Outside Europe", "<=9 years", "10-12 years", ">=13 years", "<=2,500", "(2,500, 3,500]", "(3,500, 4,500]", ">4,500", "Currently married", "Never married", "Other", "living_alone_yes", "living_alone_no", "personal_support_yes", "personal_support_no", "Stockholm County" )
-
-fluidity_imp_prop_summary <- fluidity_imp_prop_summary %>%
-  mutate( subgroup = factor( subgroup, levels = desired_order ) ) %>%
-  arrange( subgroup )
-
-fluidity_imp_prop_summary[ 4,1 ] <- "Other"
-
-fluidity_imp_prop_summary <- fluidity_imp_prop_summary %>% 
-  add_row( subgroup = "Sexual identityᵇ", .before = 1 )
-
-fluidity_imp_prop_summary <- fluidity_imp_prop_summary %>% 
-  add_row( subgroup = "Sex", .before = 6 )
-
-fluidity_imp_prop_summary <- fluidity_imp_prop_summary %>% 
-  add_row( subgroup = "Age group", .before = 9 )
-
-fluidity_imp_prop_summary <- fluidity_imp_prop_summary %>% 
-  add_row( subgroup = "Male", .before = 14 )
-
-fluidity_imp_prop_summary <- fluidity_imp_prop_summary %>% 
-  add_row( subgroup = "Female", .before = 19 )
-
-fluidity_imp_prop_summary <- fluidity_imp_prop_summary %>% 
-  add_row( subgroup = "Country of birth", .before = 24 )
-
-fluidity_imp_prop_summary <- fluidity_imp_prop_summary %>% 
-  add_row( subgroup = "Education years", .before = 28 )
-
-fluidity_imp_prop_summary <- fluidity_imp_prop_summary %>% 
-  add_row( subgroup = "Income (100 kr/yr)ᵉ", .before = 32 )
-
-fluidity_imp_prop_summary <- fluidity_imp_prop_summary %>% 
-  add_row( subgroup = "Marital statusᶠ", .before = 37 )
-
-fluidity_imp_prop_summary <- fluidity_imp_prop_summary %>% 
-  add_row( subgroup = "Living alone", .before = 41 )
-
-fluidity_imp_prop_summary <- fluidity_imp_prop_summary %>% 
-  add_row( subgroup = "Personal support", .before = 44 )
-
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == "16-29" ] <- "16–29 yrsᶜ"
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == "30-44" ] <- "30–44 yrs"
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == "45-59" ] <- "45–59 yrs"
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == ">=60" ] <- "\u2265 60 yrs"
-
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == "16-29.Male" ] <- "16–29 yrsᵇ"
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == "30-44.Male" ] <- "30–44 yrs"
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == "45-59.Male" ] <- "45–59 yrs"
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == ">=60.Male" ] <- "\u2265 60 yrs"
-
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == "16-29.Female" ] <- "16–29 yrsᵇ"
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == "30-44.Female" ] <- "30–44 yrs"
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == "45-59.Female" ] <- "45–59 yrs"
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == ">=60.Female" ] <- "\u2265 60 yrs"
-
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == "<=9 years" ] <- "\u2264 9 yrs"
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == "10-12 years" ] <- "10–12 yrs"
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == ">=13 years" ] <- "\u2265 13 yrs"
-
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == "Europe" ] <- "Europeᵈ"
-
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == "<=2,500" ] <- "\u2264 2,500"
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == ">4,500" ] <- "> 4,500"
-
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == "living_alone_no" ] <- "No"
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == "living_alone_yes" ] <- "Yes"
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == "personal_support_no" ] <- "No"
-fluidity_imp_prop_summary$subgroup[ fluidity_imp_prop_summary$subgroup == "personal_support_yes" ] <- "Yes"
-
-fluidity_imp_prop_summary$subgroup <- ifelse( is.na( fluidity_imp_prop_summary$changed_point_estimate_2010 ) | 
-                                      fluidity_imp_prop_summary$subgroup == "Stockholm County", 
-                                    fluidity_imp_prop_summary$subgroup,
-                                    paste0( "   ", fluidity_imp_prop_summary$subgroup ) )
-
-colnames( fluidity_imp_prop_summary )[ colnames( fluidity_imp_prop_summary ) == "subgroup" ] <- "Subgroup"
-
-fluidity_imp_prop_summary <- fluidity_imp_prop_summary %>% 
-  add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
-
-fluidity_imp_prop_summary <- fluidity_imp_prop_summary %>% 
-  add_column( "SPHC 2010" = paste0(
-    sprintf( "%.1f", fluidity_imp_prop_summary$changed_point_estimate_2010*100 ), " (", 
-    sprintf( "%.1f", fluidity_imp_prop_summary$changed_lower_ci_2010*100 ), ", ", 
-    sprintf( "%.1f", fluidity_imp_prop_summary$changed_upper_ci_2010*100 ), ")" ),
-    .before = 3 )
-
-fluidity_imp_prop_summary <- fluidity_imp_prop_summary %>% 
-  add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
-
-fluidity_imp_prop_summary <- fluidity_imp_prop_summary %>% 
-  add_column( "SPHC 2014" = paste0(
-    sprintf( "%.1f", fluidity_imp_prop_summary$changed_point_estimate_2014*100 ), " (", 
-    sprintf( "%.1f", fluidity_imp_prop_summary$changed_lower_ci_2014*100 ), ", ", 
-    sprintf( "%.1f", fluidity_imp_prop_summary$changed_upper_ci_2014*100 ), ")"  ),
-    .before = 5 )
-
-fluidity_imp_prop_summary$`SPHC 2010` <- ifelse( is.na( fluidity_imp_prop_summary$changed_point_estimate_2010 ), "",
-  fluidity_imp_prop_summary$`SPHC 2010` )
-
-fluidity_imp_prop_summary$`SPHC 2014` <- ifelse( is.na( fluidity_imp_prop_summary$changed_point_estimate_2010 ), "",
-  fluidity_imp_prop_summary$`SPHC 2014` )
-
-fluidity_imp_prop_summary$sample_size_2010 <- ifelse( is.na( fluidity_imp_prop_summary$changed_point_estimate_2010 ), "",
-  fluidity_imp_prop_summary$sample_size_2010 )
-
-fluidity_imp_prop_summary$sample_size_2014 <- ifelse( is.na( fluidity_imp_prop_summary$changed_point_estimate_2010 ), "",
-  fluidity_imp_prop_summary$sample_size_2014 )
-
-fluidity_imp_prop_summary_updated <- fluidity_imp_prop_summary %>%
-  select( 1:3, 9, 4, 5, 13, everything() )
-
-fluidity_imp_prop_summary_updated <- fluidity_imp_prop_summary_updated %>%
-  add_column( temp1 = " ", .before = 2 ) %>%
-  add_column( temp2 = " ", .before = 5 ) %>%
-  add_column( temp3 = " ", .before = 7 ) %>%
-  add_column( temp4 = " ", .before = 10 )
-
-names( fluidity_imp_prop_summary_updated )[ names( fluidity_imp_prop_summary_updated ) %in% c( "temp1", "temp2", "temp3", "temp4", "SPHC 2010", "SPHC 2014", "sample_size_2010", "sample_size_2014" ) ] <- ""
-```
-
-#### 4.2. Plotting
-##### 4.2.1. Part 1
-```{r}
-tm <- forest_theme(
-  base_size = 10,
-  colhead = list( fg_params = list( fontsize = 10 ) ), 
-  base_family = "Arial",
-  ci_col = "red",
-  refline_lty = "dotted",
-  refline_lwd = 1,
-  refline_col = "steelblue",
-  vertline_lty = "dashed",
-  vertline_lwd = 1,
-  vertline_col = "steelblue",
-  summary_col = "#4575b4",
-  summary_fill = "#4575b4"
-)
-
-fluidity_imp_prop_summary_updated_part_1 <- fluidity_imp_prop_summary_updated[ c( 1:13, 24:47 ), ]
-
-p_prop_imp_fluidity <- forest(
-  fluidity_imp_prop_summary_updated_part_1[ , c( 1:11 ) ],
-  
-  est = list( fluidity_imp_prop_summary_updated_part_1$changed_point_estimate_2010*100,
-              fluidity_imp_prop_summary_updated_part_1$changed_point_estimate_2014*100 ),
-  
-  lower = list( fluidity_imp_prop_summary_updated_part_1$changed_lower_ci_2010*100,
-                fluidity_imp_prop_summary_updated_part_1$changed_lower_ci_2014*100 ),
-  
-  upper = list( fluidity_imp_prop_summary_updated_part_1$changed_upper_ci_2010*100,
-                fluidity_imp_prop_summary_updated_part_1$changed_upper_ci_2014*100 ),
-  
-  ci_column = c( 3, 8 ),
-  is_summary = c( rep( FALSE, nrow( fluidity_imp_prop_summary_updated_part_1 ) - 1 ), TRUE ),
-  sizes = 0.4,
-  
-  ref_line = c( fluidity_imp_prop_summary_2010[ fluidity_imp_prop_summary_2010$subgroup == "Stockholm County", ]$changed_point_estimate_2010*100, fluidity_imp_prop_summary_2014[ fluidity_imp_prop_summary_2014$subgroup == "Stockholm County", ]$changed_point_estimate_2014*100 ),
-  
-  xlim = list( c( 0, 80 ), c( 0, 60 ) ),
-  ticks_at = list( c( 0, 20, 40, 60, 80 ), c( 0, 20, 40, 60 ) ),
-  
-  xlab = "Proportion (%) (95% CI)",
-  theme = tm
-)
-
-p_prop_imp_fluidity <- edit_plot(
-  p_prop_imp_fluidity,
-  row = c( 1, 6, 9, 14, 18, 22, 27, 31, 34, 37 ),
-  gp = gpar(fontface = "bold")
-)
-
-p_prop_imp_fluidity <- add_text(
-  p_prop_imp_fluidity,
-  text = "Proportion (%) (95% CI)",
-  col = 3:4,
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_prop_imp_fluidity <- add_text(
-  p_prop_imp_fluidity,
-  text = "SSᵃ",
-  col = 6,
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_prop_imp_fluidity <- add_text(
-  p_prop_imp_fluidity,
-  text = "SSᵃ",
-  col = 11,
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_prop_imp_fluidity <- insert_text(
-  p_prop_imp_fluidity,
-  text = "SPHC 2010",
-  col = 3:6,
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_prop_imp_fluidity <- add_text(
-  p_prop_imp_fluidity,
-  text = "SPHC 2014",
-  col = 8:11,
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_prop_imp_fluidity <- add_text(
-  p_prop_imp_fluidity,
-  text = "Proportion (%) (95% CI)",
-  col = 8:9,
-  row = 2,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_prop_imp_fluidity <- add_border(
-  p_prop_imp_fluidity,
-  part = "header",
-  row = 1,
-  where = "bottom",
-  col = 3:6,
-  gp = gpar(lwd = 1)
-)
-
-p_prop_imp_fluidity <- add_border(
-  p_prop_imp_fluidity,
-  part = "header",
-  row = 1,
-  where = "bottom",
-  col = 8:11,
-  gp = gpar(lwd = 1)
-)
-
-p_prop_imp_fluidity <- edit_plot( p_prop_imp_fluidity,
-                                 row = c( 1, 6, 9, 14, 18, 22, 27, 31, 34, 37 ), 
-                                 which = "background",
-                                 gp = gpar( fill = "white" )
-)
-
-p_prop_imp_fluidity <- edit_plot( p_prop_imp_fluidity,
-                                 row = c( 2:5, 7, 8, 10:13, 15:17, 19:21, 23:26, 28:30, 32, 33, 35, 36 ), 
-                                 which = "background",
-                                 gp = gpar( fill = "#eff3f2" )
-)
-
-plot( p_prop_imp_fluidity )
-```
-
-##### 4.2.2. Part 2 (age by sex)
-```{r}
-tm <- forest_theme(
-  base_size = 10,
-  colhead = list( fg_params = list( fontsize = 10 ) ), 
-  base_family = "Arial",
-  ci_col = "red",
-  refline_lty = "dotted",
-  refline_lwd = 1,
-  refline_col = "steelblue",
-  vertline_lty = "dashed",
-  vertline_lwd = 1,
-  vertline_col = "steelblue",
-  summary_col = "#4575b4",
-  summary_fill = "#4575b4"
-)
-
-fluidity_imp_prop_summary_updated_part_2 <- fluidity_imp_prop_summary_updated[ c( 14:23, 47 ), ]
-colnames( fluidity_imp_prop_summary_updated_part_2 )[1] <- "Age Group"
-
-p_prop_imp_fluidity <- forest(
-  fluidity_imp_prop_summary_updated_part_2[ , c( 1:11 ) ],
-  
-  est = list( fluidity_imp_prop_summary_updated_part_2$changed_point_estimate_2010*100,
-              fluidity_imp_prop_summary_updated_part_2$changed_point_estimate_2014*100 ),
-  
-  lower = list( fluidity_imp_prop_summary_updated_part_2$changed_lower_ci_2010*100,
-                fluidity_imp_prop_summary_updated_part_2$changed_lower_ci_2014*100 ),
-  
-  upper = list( fluidity_imp_prop_summary_updated_part_2$changed_upper_ci_2010*100,
-                fluidity_imp_prop_summary_updated_part_2$changed_upper_ci_2014*100 ),
-  
-  ci_column = c( 3, 8 ),
-  is_summary = c( rep( FALSE, nrow( fluidity_imp_prop_summary_updated_part_2 ) - 1 ), TRUE ),
-  sizes = 0.4,
-  
-   ref_line = c( fluidity_imp_prop_summary_2010[ fluidity_imp_prop_summary_2010$subgroup == "Stockholm County", ]$changed_point_estimate_2010*100, fluidity_imp_prop_summary_2014[ fluidity_imp_prop_summary_2014$subgroup == "Stockholm County", ]$changed_point_estimate_2014*100 ),
-  
-  xlim = list( c( 0, 30 ), c( 0, 20 ) ),
-  ticks_at = list( c( 0, 10, 20, 30 ), c( 0, 10, 20 ) ),
-  
-  xlab = "Proportion (%) (95% CI)",
-  theme = tm
-)
-
-p_prop_imp_fluidity <- edit_plot(
-  p_prop_imp_fluidity,
-  row = c( 1, 6, 11 ),
-  gp = gpar(fontface = "bold")
-)
-
-p_prop_imp_fluidity <- add_text(
-  p_prop_imp_fluidity,
-  text = "Proportion (%) (95% CI)",
-  col = 3:4,
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_prop_imp_fluidity <- add_text(
-  p_prop_imp_fluidity,
-  text = "SSᵃ",
-  col = 6,
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_prop_imp_fluidity <- add_text(
-  p_prop_imp_fluidity,
-  text = "SSᵃ",
-  col = 11,
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_prop_imp_fluidity <- insert_text(
-  p_prop_imp_fluidity,
-  text = "SPHC 2010",
-  col = 3:6,
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_prop_imp_fluidity <- add_text(
-  p_prop_imp_fluidity,
-  text = "SPHC 2014",
-  col = 8:11,
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_prop_imp_fluidity <- add_text(
-  p_prop_imp_fluidity,
-  text = "Proportion (%) (95% CI)",
-  col = 8:9,
-  row = 2,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_prop_imp_fluidity <- add_border(
-  p_prop_imp_fluidity,
-  part = "header",
-  row = 1,
-  where = "bottom",
-  col = 3:6,
-  gp = gpar(lwd = 1)
-)
-
-p_prop_imp_fluidity <- add_border(
-  p_prop_imp_fluidity,
-  part = "header",
-  row = 1,
-  where = "bottom",
-  col = 8:11,
-  gp = gpar(lwd = 1)
-)
-
-p_prop_imp_fluidity <- edit_plot( p_prop_imp_fluidity,
-                                 row = c( 1, 6, 11 ), 
-                                 which = "background",
-                                 gp = gpar( fill = "white" )
-)
-
-p_prop_imp_fluidity <- edit_plot( p_prop_imp_fluidity,
-                                 row = c( 2:5, 7:10 ), 
-                                 which = "background",
-                                 gp = gpar( fill = "#eff3f2" )
-)
-
-plot( p_prop_imp_fluidity )
-```
-
-### 5. Plots for Relation between Change in Sexual Identity and Demographic Factors
-#### 5.1. Prepare dataset for plotting
-```{r}
-fluidity_imp_rr_2010 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/fluidity_imp_rr_2010.xlsx")
-fluidity_imp_rr_2014 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/fluidity_imp_rr_2014.xlsx")
-
-# to make it easier to combine across datasets
-# a note on these changes will be added on the graph later
-fluidity_imp_rr_2010$subgroup[ fluidity_imp_rr_2010$subgroup == "age_exp18-29" ] <- "age_exp16-29"
-fluidity_imp_rr_2010$subgroup[ fluidity_imp_rr_2010$subgroup == "male_ age_exp18-29" ] <- "age_exp16-29_Male"
-fluidity_imp_rr_2010$subgroup[ fluidity_imp_rr_2010$subgroup == "male_ age_exp30-44" ] <- "age_exp30-44_Male"
-fluidity_imp_rr_2010$subgroup[ fluidity_imp_rr_2010$subgroup == "male_ age_exp>=60" ] <- "age_exp>=60_Male"
-fluidity_imp_rr_2010$subgroup[ fluidity_imp_rr_2010$subgroup == "female_ age_exp18-29" ] <- "age_exp16-29_Female"
-fluidity_imp_rr_2010$subgroup[ fluidity_imp_rr_2010$subgroup == "female_ age_exp30-44" ] <- "age_exp30-44_Female"
-fluidity_imp_rr_2010$subgroup[ fluidity_imp_rr_2010$subgroup == "female_ age_exp>=60" ] <- "age_exp>=60_Female"
-
-fluidity_imp_rr_2014$subgroup[ fluidity_imp_rr_2014$subgroup == "male_ age_exp16-29" ] <- "age_exp16-29_Male"
-fluidity_imp_rr_2014$subgroup[ fluidity_imp_rr_2014$subgroup == "male_ age_exp30-44" ] <- "age_exp30-44_Male"
-fluidity_imp_rr_2014$subgroup[ fluidity_imp_rr_2014$subgroup == "male_ age_exp>=60" ] <- "age_exp>=60_Male"
-fluidity_imp_rr_2014$subgroup[ fluidity_imp_rr_2014$subgroup == "female_ age_exp16-29" ] <- "age_exp16-29_Female"
-fluidity_imp_rr_2014$subgroup[ fluidity_imp_rr_2014$subgroup == "female_ age_exp30-44" ] <- "age_exp30-44_Female"
-fluidity_imp_rr_2014$subgroup[ fluidity_imp_rr_2014$subgroup == "female_ age_exp>=60" ] <- "age_exp>=60_Female"
-
-fluidity_imp_rr_2010$subgroup[ fluidity_imp_rr_2010$subgroup == "sexual_identity_2010_expHomosexual" ] <- "Homosexual"
-fluidity_imp_rr_2010$subgroup[ fluidity_imp_rr_2010$subgroup == "sexual_identity_2010_expBisexual" ] <- "Bisexual"
-fluidity_imp_rr_2010$subgroup[ fluidity_imp_rr_2010$subgroup == "sexual_identity_2010_expOther" ] <- "Other"
-
-fluidity_imp_rr_2014$subgroup[ fluidity_imp_rr_2014$subgroup == "sexual_identity_2014_expHomosexual" ] <- "Homosexual"
-fluidity_imp_rr_2014$subgroup[ fluidity_imp_rr_2014$subgroup == "sexual_identity_2014_expBisexual" ] <- "Bisexual"
-fluidity_imp_rr_2014$subgroup[ fluidity_imp_rr_2014$subgroup == "sexual_identity_2014_expOther" ] <- "Other"
-
-# merge datasets
-fluidity_imp_rr <- fluidity_imp_rr_2010 %>%
-  full_join( fluidity_imp_rr_2014, by = "subgroup" )
-
-# modify table format
-desired_order <- c( "Homosexual", "Bisexual", "Other", "sex_expFemale", "age_exp16-29", "age_exp30-44", "age_exp>=60", "age_exp16-29_Male", "age_exp30-44_Male", "age_exp>=60_Male", "age_exp16-29_Female", "age_exp30-44_Female", "age_exp>=60_Female", "country_of_birth_expEurope", "country_of_birth_expOutside Europe", "education_exp<=9 years", "education_exp10-12 years", "income_exp<=2,500", "income_exp(2,500, 3,500]", "income_exp(3,500, 4,500]", "marital_status_expNever married", "marital_status_expOther", "living_status_expliving_alone_yes", "personal_support_exppersonal_support_no" )
-
-fluidity_imp_rr <- fluidity_imp_rr %>%
-  mutate( subgroup = factor( subgroup, levels = desired_order ) ) %>%
-  arrange( subgroup )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = "Sexual identityᶜ", .before = 1 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = "Sex", .before = 5 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = "Age group", .before = 7 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = "Male", .before = 11 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = "Female", .before = 15 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = "Country of birth", .before = 19 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = "Education years", .before = 22 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = "Income (100 kr/yr)ᵉ", .before = 25 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = "Marital statusᵈ", .before = 29 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = "Living alone", .before = 32 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = "Personal support", .before = 34 )
-
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "Homosexual" ] <- paste0( "   ", "Homosexual\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "Bisexual" ] <- paste0( "   ", "Bisexual\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "Other" ] <- paste0( "   ", "Other\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "sex_expFemale" ] <- paste0( "   ", "Female\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp16-29" ] <- paste0( "   ", "16–29 yrsᶜ\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp30-44" ] <- paste0( "   ", "30–44 yrs\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp>=60" ] <- paste0( "   ", "\u2265 60 yrs\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp16-29_Male" ] <- paste0( "   ", "16–29 yrsᶜ\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp30-44_Male" ] <- paste0( "   ", "30–44 yrs\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp>=60_Male" ] <- paste0( "   ", "\u2265 60 yrs\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp16-29_Female" ] <- paste0( "   ", "16–29 yrsᶜ\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp30-44_Female" ] <- paste0( "   ", "30–44 yrs\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp>=60_Female" ] <- paste0( "   ", "\u2265 60 yrs\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "country_of_birth_expEurope" ] <- paste0( "   ", "Europeᵈ\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "country_of_birth_expOutside Europe" ] <- paste0( "   ", "Outside Europe\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "education_exp<=9 years" ] <- paste0( "   ", "\u2264 9 yrs\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "education_exp10-12 years" ] <- paste0( "   ", "10–12 yrs\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "income_exp<=2,500" ] <- paste0( "   ", "\u2264 2,500\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "income_exp(2,500, 3,500]" ] <- paste0( "   ", "(2,500, 3,500]\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "income_exp(3,500, 4,500]" ] <- paste0( "   ", "(3,500, 4,500]\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "marital_status_expNever married" ] <- paste0( "   ", "Never married\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "marital_status_expOther" ] <- paste0( "   ", "Other\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "living_status_expliving_alone_yes" ] <- paste0( "   ", "Yes\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "personal_support_exppersonal_support_no" ] <- paste0( "   ", "No\n" )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_column( "Sexual_fluidity_2010_crude" = paste0(
-    sprintf( "%.2f", fluidity_imp_rr$point_estimate_2010_crude ), " (", 
-    sprintf( "%.2f", fluidity_imp_rr$lower_ci_2010_crude ), ", ", 
-    sprintf( "%.2f", fluidity_imp_rr$upper_ci_2010_crude ), ")" ),
-    .before = 2 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_column( "Sexual_fluidity_2010_model_1" = paste0(
-    sprintf( "%.2f", fluidity_imp_rr$point_estimate_2010_model_1 ), " (", 
-    sprintf( "%.2f", fluidity_imp_rr$lower_ci_2010_model_1 ), ", ", 
-    sprintf( "%.2f", fluidity_imp_rr$upper_ci_2010_model_1 ), ")" ),
-    .before = 3 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_column( "Sexual_fluidity_2010_model_2" = paste0(
-    sprintf( "%.2f", fluidity_imp_rr$point_estimate_2010_model_2 ), " (", 
-    sprintf( "%.2f", fluidity_imp_rr$lower_ci_2010_model_2 ), ", ", 
-    sprintf( "%.2f", fluidity_imp_rr$upper_ci_2010_model_2 ), ")" ),
-    .before = 4 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_column( "Sexual_fluidity_2014_crude" = paste0(
-    sprintf( "%.2f", fluidity_imp_rr$point_estimate_2014_crude ), " (", 
-    sprintf( "%.2f", fluidity_imp_rr$lower_ci_2014_crude ), ", ", 
-    sprintf( "%.2f", fluidity_imp_rr$upper_ci_2014_crude ), ")" ),
-    .before = 5 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_column( "Sexual_fluidity_2014_model_1" = paste0(
-    sprintf( "%.2f", fluidity_imp_rr$point_estimate_2014_model_1 ), " (", 
-    sprintf( "%.2f", fluidity_imp_rr$lower_ci_2014_model_1 ), ", ", 
-    sprintf( "%.2f", fluidity_imp_rr$upper_ci_2014_model_1 ), ")" ),
-    .before = 6 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_column( "Sexual_fluidity_2014_model_2" = paste0(
-    sprintf( "%.2f", fluidity_imp_rr$point_estimate_2014_model_2 ), " (", 
-    sprintf( "%.2f", fluidity_imp_rr$lower_ci_2014_model_2 ), ", ", 
-    sprintf( "%.2f", fluidity_imp_rr$upper_ci_2014_model_2 ), ")" ),
-    .before = 7 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_column( "Sexual_fluidity_crude" = paste( fluidity_imp_rr$Sexual_fluidity_2010_crude,
-                                               fluidity_imp_rr$Sexual_fluidity_2014_crude,
-                                               sep = "\n" ),
-              .before = 2 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_column( "Sexual_fluidity_model_1" = paste( fluidity_imp_rr$Sexual_fluidity_2010_model_1,
-                                                 fluidity_imp_rr$Sexual_fluidity_2014_model_1,
-                                                 sep = "\n" ),
-              .before = 3 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_column( "Sexual_fluidity_model_2" = paste( fluidity_imp_rr$Sexual_fluidity_2010_model_2,
-                                                 fluidity_imp_rr$Sexual_fluidity_2014_model_2,
-                                                 sep = "\n" ),
-              .before = 4 )
-
-fluidity_imp_rr$Sexual_fluidity_crude <- ifelse( is.na( fluidity_imp_rr$point_estimate_2010_crude ), "",
-                                                            fluidity_imp_rr$Sexual_fluidity_crude )
-
-fluidity_imp_rr$Sexual_fluidity_model_1 <- ifelse( is.na( fluidity_imp_rr$point_estimate_2010_crude ), "",
-                                                            fluidity_imp_rr$Sexual_fluidity_model_1 )
-
-fluidity_imp_rr$Sexual_fluidity_model_2 <- ifelse( is.na( fluidity_imp_rr$point_estimate_2010_crude ), "",
-                                                            fluidity_imp_rr$Sexual_fluidity_model_2 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = paste0( "   ", "Heterosexual" ), 
-           Sexual_fluidity_crude = "Reference",
-           Sexual_fluidity_model_1 = "Reference",
-           Sexual_fluidity_model_2 = "Reference",
-           .before = 2 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = paste0( "   ", "Male" ), 
-           Sexual_fluidity_crude = "Reference",
-           Sexual_fluidity_model_1 = "Reference",
-           Sexual_fluidity_model_2 = "Reference",
-           .before = 7 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = paste0( "   ", "45–59 yrs" ), 
-           Sexual_fluidity_crude = "Reference",
-           Sexual_fluidity_model_1 = "Reference",
-           Sexual_fluidity_model_2 = "Reference",
-           .before = 12 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = paste0( "   ", "45–59 yrs" ), 
-           Sexual_fluidity_crude = "Reference",
-           Sexual_fluidity_model_1 = "Reference",
-           Sexual_fluidity_model_2 = "Reference",
-           .before = 17 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = paste0( "   ", "45–59 yrs" ), 
-           Sexual_fluidity_crude = "Reference",
-           Sexual_fluidity_model_1 = "Reference",
-           Sexual_fluidity_model_2 = "Reference",
-           .before = 22 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = paste0( "   ", "Sweden" ), 
-           Sexual_fluidity_crude = "Reference",
-           Sexual_fluidity_model_1 = "Reference",
-           Sexual_fluidity_model_2 = "Reference",
-           .before = 25 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = paste0( "   ", "\u2265 13 yrs" ), 
-           Sexual_fluidity_crude = "Reference",
-           Sexual_fluidity_model_1 = "Reference",
-           Sexual_fluidity_model_2 = "Reference",
-           .before = 31 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = paste0( "   ", "> 4,500" ), 
-           Sexual_fluidity_crude = "Reference",
-           Sexual_fluidity_model_1 = "Reference",
-           Sexual_fluidity_model_2 = "Reference",
-           .before = 36 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = paste0( "   ", "Currently married" ), 
-           Sexual_fluidity_crude = "Reference",
-           Sexual_fluidity_model_1 = "Reference",
-           Sexual_fluidity_model_2 = "Reference",
-           .before = 38 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = paste0( "   ", "No" ), 
-           Sexual_fluidity_crude = "Reference",
-           Sexual_fluidity_model_1 = "Reference",
-           Sexual_fluidity_model_2 = "Reference",
-           .before = 43 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = paste0( "   ", "Yes" ), 
-           Sexual_fluidity_crude = "Reference",
-           Sexual_fluidity_model_1 = "Reference",
-           Sexual_fluidity_model_2 = "Reference",
-           .before = 45 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
-
-fluidity_imp_rr <- fluidity_imp_rr %>%
-  add_column( temp1 = " ", .before = 2 ) %>%
-  add_column( temp2 = " ", .before = 5 ) %>%
-  add_column( temp3 = " ", .before = 8 )
-
-colnames( fluidity_imp_rr )[1] <- "Demographic Factor"
-
-names( fluidity_imp_rr )[ names( fluidity_imp_rr ) %in% c( "temp1", "temp2", "temp3", "Sexual_fluidity_crude", "Sexual_fluidity_model_1", "Sexual_fluidity_model_2" ) ] <- ""
-```
-
-#### 5.2. Plotting
-##### 5.2.1. Part 1
-```{r}
-tm <- forest_theme(
-  base_size = 10,
-  colhead = list( fg_params = list( fontsize = 10 ) ),
-  legend_value = c( "SPHC 2010", "SPHC 2014" ),
-  legend_name = NULL,
-  legend_position = "bottom",
-  base_family = "Arial",
-  refline_lty = "dashed",
-  refline_lwd = 1,
-  refline_col = "grey20"
-)
-
-fluidity_imp_rr_part_1 <- fluidity_imp_rr[ -c( 9:23, 37:46 ), ]
-
-p_imp_pr_poisson_sexual_fluidity <- forest(
-  fluidity_imp_rr_part_1[ , c( 1:10 ) ],
-  
-  est = list( fluidity_imp_rr_part_1$point_estimate_2010_crude,
-              fluidity_imp_rr_part_1$point_estimate_2010_model_1,
-              fluidity_imp_rr_part_1$point_estimate_2010_model_2,
-              
-              fluidity_imp_rr_part_1$point_estimate_2014_crude,
-              fluidity_imp_rr_part_1$point_estimate_2014_model_1,
-              fluidity_imp_rr_part_1$point_estimate_2014_model_2
-  ),
-  
-  lower = list( fluidity_imp_rr_part_1$lower_ci_2010_crude,
-                fluidity_imp_rr_part_1$lower_ci_2010_model_1,
-                fluidity_imp_rr_part_1$lower_ci_2010_model_2,
-                
-                fluidity_imp_rr_part_1$lower_ci_2014_crude,
-                fluidity_imp_rr_part_1$lower_ci_2014_model_1,
-                fluidity_imp_rr_part_1$lower_ci_2014_model_2
-  ),
-  
-  upper = list( fluidity_imp_rr_part_1$upper_ci_2010_crude,
-                fluidity_imp_rr_part_1$upper_ci_2010_model_1,
-                fluidity_imp_rr_part_1$upper_ci_2010_model_2,
-                
-                fluidity_imp_rr_part_1$upper_ci_2014_crude,
-                fluidity_imp_rr_part_1$upper_ci_2014_model_1,
-                fluidity_imp_rr_part_1$upper_ci_2014_model_2
-  ),
-  
-  ci_column = c( 3, 6, 9 ),
-  sizes = 0.4,
-  
-  ref_line = 1,
-  
-  xlim = c( 0, 10 ),
-  ticks_at = c( 0, 1, 5, 10 ),
-  
-  xlab = "Risk Ratio (95% CI)",
-  nudge_y = 0.5,
-  theme = tm
-)
-
-p_imp_pr_poisson_sexual_fluidity <- edit_plot( p_imp_pr_poisson_sexual_fluidity,
-                                              row = c( 1, 6, 9, 13, 17 ),
-                                              col = 1,
-                                              gp = gpar( fontface = "bold" ) 
-)
-
-p_imp_pr_poisson_sexual_fluidity <- add_text(
-  p_imp_pr_poisson_sexual_fluidity,
-  text = "Crude Risk Ratio (95% CI)",
-  col = c( 3:4 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- add_text(
-  p_imp_pr_poisson_sexual_fluidity,
-  text = "Model 1, Risk Ratio (95% CI)ᵃ",
-  col = c( 6:7 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- add_text(
-  p_imp_pr_poisson_sexual_fluidity,
-  text = "Model 2, Risk Ratio (95% CI)ᵇ",
-  col = c( 9:10 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- insert_text(
-  p_imp_pr_poisson_sexual_fluidity,
-  text = "Change in Sexual Identity",
-  col = c( 3:10 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- edit_plot( p_imp_pr_poisson_sexual_fluidity,
-                                              row = c( 1, 6, 9, 13, 17 ), 
-                                              which = "background",
-                                              gp = gpar( fill = "white" )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- edit_plot( p_imp_pr_poisson_sexual_fluidity,
-                                              row = c( 2:5, 7, 8, 10:12, 14:16, 18:21 ), 
-                                              which = "background",
-                                              gp = gpar( fill = "#eff3f2" )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- add_border(
-  p_imp_pr_poisson_sexual_fluidity,
-  part = "header",
-  row = 2,
-  col = c( 3:10 ),
-  where = "top",
-  gp = gpar(lwd = 1)
-)
-
-plot( p_imp_pr_poisson_sexual_fluidity )
-```
-
-##### 5.2.2. Part 2
-```{r}
-tm <- forest_theme(
-  base_size = 10,
-  colhead = list( fg_params = list( fontsize = 10 ) ),
-  legend_value = c( "SPHC 2010", "SPHC 2014" ),
-  legend_name = NULL,
-  legend_position = "bottom",
-  base_family = "Arial",
-  refline_lty = "dashed",
-  refline_lwd = 1,
-  refline_col = "grey20"
-)
-
-fluidity_imp_rr_part_2 <- fluidity_imp_rr[ c( 9:13, 37:46 ), ]
-
-p_imp_pr_poisson_sexual_fluidity <- forest(
-  fluidity_imp_rr_part_2[ , c( 1:10 ) ],
-  
-  est = list( fluidity_imp_rr_part_2$point_estimate_2010_crude,
-              fluidity_imp_rr_part_2$point_estimate_2010_model_1,
-              fluidity_imp_rr_part_2$point_estimate_2010_model_2,
-              
-              fluidity_imp_rr_part_2$point_estimate_2014_crude,
-              fluidity_imp_rr_part_2$point_estimate_2014_model_1,
-              fluidity_imp_rr_part_2$point_estimate_2014_model_2
-  ),
-  
-  lower = list( fluidity_imp_rr_part_2$lower_ci_2010_crude,
-                fluidity_imp_rr_part_2$lower_ci_2010_model_1,
-                fluidity_imp_rr_part_2$lower_ci_2010_model_2,
-                
-                fluidity_imp_rr_part_2$lower_ci_2014_crude,
-                fluidity_imp_rr_part_2$lower_ci_2014_model_1,
-                fluidity_imp_rr_part_2$lower_ci_2014_model_2
-  ),
-  
-  upper = list( fluidity_imp_rr_part_2$upper_ci_2010_crude,
-                fluidity_imp_rr_part_2$upper_ci_2010_model_1,
-                fluidity_imp_rr_part_2$upper_ci_2010_model_2,
-                
-                fluidity_imp_rr_part_2$upper_ci_2014_crude,
-                fluidity_imp_rr_part_2$upper_ci_2014_model_1,
-                fluidity_imp_rr_part_2$upper_ci_2014_model_2
-  ),
-  
-  ci_column = c( 3, 6, 9 ),
-  sizes = 0.4,
-  
-  ref_line = 1,
-  
-  xlim = c( 0, 3 ),
-  ticks_at = c( 0, 1, 2, 3 ),
-  
-  xlab = "Risk Ratio (95% CI)",
-  nudge_y = 0.5,
-  theme = tm
-)
-
-p_imp_pr_poisson_sexual_fluidity <- edit_plot( p_imp_pr_poisson_sexual_fluidity,
-                                              row = c( 1, 6, 10, 13 ),
-                                              col = 1,
-                                              gp = gpar( fontface = "bold" ) 
-)
-
-p_imp_pr_poisson_sexual_fluidity <- add_text(
-  p_imp_pr_poisson_sexual_fluidity,
-  text = "Crude Risk Ratio (95% CI)",
-  col = c( 3:4 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- add_text(
-  p_imp_pr_poisson_sexual_fluidity,
-  text = "Model 1, Risk Ratio (95% CI)ᵃ",
-  col = c( 6:7 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- add_text(
-  p_imp_pr_poisson_sexual_fluidity,
-  text = "Model 2, Risk Ratio (95% CI)ᵇ",
-  col = c( 9:10 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- insert_text(
-  p_imp_pr_poisson_sexual_fluidity,
-  text = "Change in Sexual Identity",
-  col = c( 3:10 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- edit_plot( p_imp_pr_poisson_sexual_fluidity,
-                                              row = c( 1, 6, 10, 13 ), 
-                                              which = "background",
-                                              gp = gpar( fill = "white" )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- edit_plot( p_imp_pr_poisson_sexual_fluidity,
-                                              row = c( 2:5, 7:9, 11, 12, 14, 15 ), 
-                                              which = "background",
-                                              gp = gpar( fill = "#eff3f2" )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- add_border(
-  p_imp_pr_poisson_sexual_fluidity,
-  part = "header",
-  row = 2,
-  col = c( 3:10 ),
-  where = "top",
-  gp = gpar(lwd = 1)
-)
-
-plot( p_imp_pr_poisson_sexual_fluidity )
-```
-
-##### 5.2.3. Part 3 (age by sex)
-```{r}
-tm <- forest_theme(
-  base_size = 10,
-  colhead = list( fg_params = list( fontsize = 10 ) ),
-  legend_value = c( "SPHC 2010", "SPHC 2014" ),
-  legend_name = NULL,
-  legend_position = "bottom",
-  base_family = "Arial",
-  refline_lty = "dashed",
-  refline_lwd = 1,
-  refline_col = "grey20"
-)
-
-fluidity_imp_rr_age_by_sex <- fluidity_imp_rr[ c( 14:23 ), ]
-
-colnames( fluidity_imp_rr_age_by_sex )[1] <- "Age Group"
-
-p_imp_pr_poisson_sexual_fluidity <- forest(
-  fluidity_imp_rr_age_by_sex[ , c( 1:10 ) ],
-  
-  est = list( fluidity_imp_rr_age_by_sex$point_estimate_2010_crude,
-              fluidity_imp_rr_age_by_sex$point_estimate_2010_model_1,
-              fluidity_imp_rr_age_by_sex$point_estimate_2010_model_2,
-              
-              fluidity_imp_rr_age_by_sex$point_estimate_2014_crude,
-              fluidity_imp_rr_age_by_sex$point_estimate_2014_model_1,
-              fluidity_imp_rr_age_by_sex$point_estimate_2014_model_2
-  ),
-  
-  lower = list( fluidity_imp_rr_age_by_sex$lower_ci_2010_crude,
-                fluidity_imp_rr_age_by_sex$lower_ci_2010_model_1,
-                fluidity_imp_rr_age_by_sex$lower_ci_2010_model_2,
-                
-                fluidity_imp_rr_age_by_sex$lower_ci_2014_crude,
-                fluidity_imp_rr_age_by_sex$lower_ci_2014_model_1,
-                fluidity_imp_rr_age_by_sex$lower_ci_2014_model_2
-  ),
-  
-  upper = list( fluidity_imp_rr_age_by_sex$upper_ci_2010_crude,
-                fluidity_imp_rr_age_by_sex$upper_ci_2010_model_1,
-                fluidity_imp_rr_age_by_sex$upper_ci_2010_model_2,
-                
-                fluidity_imp_rr_age_by_sex$upper_ci_2014_crude,
-                fluidity_imp_rr_age_by_sex$upper_ci_2014_model_1,
-                fluidity_imp_rr_age_by_sex$upper_ci_2014_model_2
-  ),
-  
-  ci_column = c( 3, 6, 9 ),
-  sizes = 0.4,
-  
-  ref_line = 1,
-  
-  xlim = c( 0, 3 ),
-  ticks_at = c( 0, 1, 2, 3 ),
-  
-  xlab = "Risk Ratio (95% CI)",
-  nudge_y = 0.5,
-  theme = tm
-)
-
-p_imp_pr_poisson_sexual_fluidity <- edit_plot( p_imp_pr_poisson_sexual_fluidity,
-                                               row = c( 1, 6 ),
-                                               col = 1,
-                                               gp = gpar( fontface = "bold" ) 
-)
-
-p_imp_pr_poisson_sexual_fluidity <- add_text(
-  p_imp_pr_poisson_sexual_fluidity,
-  text = "Crude Risk Ratio (95% CI)",
-  col = c( 3:4 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- add_text(
-  p_imp_pr_poisson_sexual_fluidity,
-  text = "Model 1, Risk Ratio (95% CI)ᵃ",
-  col = c( 6:7 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- add_text(
-  p_imp_pr_poisson_sexual_fluidity,
-  text = "Model 2, Risk Ratio (95% CI)ᵇ",
-  col = c( 9:10 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- insert_text(
-  p_imp_pr_poisson_sexual_fluidity,
-  text = "Change in Sexual Identity",
-  col = c( 3:10 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- edit_plot( p_imp_pr_poisson_sexual_fluidity,
-                                               row = c( 1, 6 ), 
-                                               which = "background",
-                                               gp = gpar( fill = "white" )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- edit_plot( p_imp_pr_poisson_sexual_fluidity,
-                                               row = c( 2:5, 7:10 ), 
-                                               which = "background",
-                                               gp = gpar( fill = "#eff3f2" )
-)
-
-p_imp_pr_poisson_sexual_fluidity <- add_border(
-  p_imp_pr_poisson_sexual_fluidity,
-  part = "header",
-  row = 2,
-  col = c( 3:10 ),
-  where = "top",
-  gp = gpar(lwd = 1)
-)
-
-plot( p_imp_pr_poisson_sexual_fluidity )
 ```

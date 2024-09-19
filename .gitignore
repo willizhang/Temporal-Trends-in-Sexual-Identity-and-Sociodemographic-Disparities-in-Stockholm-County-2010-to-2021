@@ -1,0 +1,12 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.xlsx
+MI_validation_2010.Rmd
+MI_validation_2010.nb.html
+MI_validation_2014.Rmd
+MI_validation_2014.nb.html
+MI_validation_2021.Rmd
+MI_validation_2021.nb.html
+.DS_Store
