@@ -9,14 +9,9 @@ editor_options:
 
 ### 1. Load Packages
 ```{r}
-library(haven)
-library(tidyr)
-library(tidyverse)
-library(dplyr)
-library(finalfit)
-library(ggplot2)
 library(naniar)
-library(jomo)
+library(tidyverse)
+library(finalfit)
 library(mitml)
 library(mitools)
 library(survey)
@@ -312,6 +307,7 @@ d_2010$design_weight <- d_2010$F10dvikt
 
 
 ##### calibrated weights #####
+
 d_2010$calibrated_weight <- d_2010$F10kalvikt
 
 
@@ -517,7 +513,7 @@ ggplot( d_2010_incomplete %>%
 
 summary( d_2010_incomplete )
 sapply( d_2010_incomplete, class ) # all continuous variables are numeric, and all categorical variables are factor
-save( d_2010_incomplete, file = "/Volumes/LGBT Project data/Multiple Imputation/d_2010_incomplete.RData" )
+# save( d_2010_incomplete, file = "/Volumes/LGBT Project data/Multiple Imputation/d_2010_incomplete.RData" )
 ```
 
 #### 4.2. Visualize missing pattern
@@ -560,7 +556,7 @@ imp_preliminary_2010 <- jomoImpute( data = d_2010_incomplete,
                                     seed = 12345
                                     ) # took around two hours
 
-save( imp_preliminary_2010, file = "/Volumes/LGBT Project data/Multiple Imputation/imp_preliminary_2010.RData" )
+# save( imp_preliminary_2010, file = "/Volumes/LGBT Project data/Multiple Imputation/imp_preliminary_2010.RData" )
 summary( imp_preliminary_2010 ) # summarize model and display convergence statistics
 plot( imp_preliminary_2010, trace = "all", print = "beta" ) # check trace and autocorrelation plots
 
@@ -575,7 +571,7 @@ imp_final_2010 <- jomoImpute( data = d_2010_incomplete,
                               seed = 12345
                               ) # took around 20 hours
 
-save( imp_final_2010, file = "/Volumes/LGBT Project data/Multiple Imputation/imp_final_2010.RData" )
+# save( imp_final_2010, file = "/Volumes/LGBT Project data/Multiple Imputation/imp_final_2010.RData" )
 summary( imp_final_2010 )
 plot( imp_final_2010, trace = "all", print = "beta" )
 ```
