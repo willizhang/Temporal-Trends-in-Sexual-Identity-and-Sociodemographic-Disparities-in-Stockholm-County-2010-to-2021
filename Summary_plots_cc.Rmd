@@ -1697,7 +1697,7 @@ long_data_generation <- prop_cc_summary_generation %>%
 
 long_data_generation <- long_data_generation %>%
   mutate( identity = if_else( identity %in% c( "Uncertain", "None of the above" ), "Other", identity ) ) %>%
-  mutate( identity = factor( identity, levels = c( "Heterosexual", "Homosexual", "Bisexual", "Other" ) ) )
+  mutate( identity = factor( identity, levels = c( "Bisexual", "Heterosexual", "Homosexual", "Other" ) ) )
 
 # plot
 ggplot( drop_na( long_data_generation ),
