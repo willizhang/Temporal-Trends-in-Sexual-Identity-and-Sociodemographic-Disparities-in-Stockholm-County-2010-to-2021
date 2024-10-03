@@ -1836,7 +1836,7 @@ ggplot( long_data,
   
   scale_y_break( c( 0.12, 0.75 ), scales = 1, space = 0.3, expand = c( 0, 0 ) ) +
   
-  labs( x = "Age cut-off (years)ᵃ", 
+  labs( x = "Age Cut-Off (Years)ᵃ", 
         y = "Proportionᵇ"
   ) +
   
@@ -1936,7 +1936,7 @@ ggplot( long_data_age_group %>%
                       breaks = c( "Female", "Male"),
                       guide = guide_legend( nrow = 2 ) ) +
   
-  labs( x = "Age group (years)ᵃ", 
+  labs( x = "Age Group (Years)ᵃ", 
         y = "Proportion"
         ) +
   
@@ -1983,7 +1983,7 @@ ggplot( long_data_age_group %>%
                       breaks = c( "Female", "Male"),
                       guide = guide_legend( nrow = 2 ) ) +
   
-  labs( x = "Age group (years)ᵇ", 
+  labs( x = "Age Group (Years)ᵇ", 
         y = "Proportion"
         ) +
   
