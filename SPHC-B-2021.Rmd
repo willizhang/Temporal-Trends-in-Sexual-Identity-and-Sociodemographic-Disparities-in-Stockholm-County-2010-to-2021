@@ -1198,7 +1198,7 @@ round( sum( d_2021$design_weight_unit_nonresponse ) * prop_lgb[ 1, 2 ], 0 ) # nu
 # calculate overall proportion of LGB identity by generation
 prop_lgb_generation <- summary( MIcombine( with( survey_design_imp,
                                                  svyby( formula = ~ I( sexual_identity_lgb == "LGB" ),
-                                                        by = ~ generation,
+                                                        by = ~ generation_sex,
                                                         FUN = svyciprop,
                                                         method = "beta" ) ) ) )
 rownames_to_column( prop_lgb_generation[ , c( "results", "(lower", "upper)" ) ], var = "subgroup" ) %>%
