@@ -1406,8 +1406,43 @@ writexl::write_xlsx( prop_imp_age_group_sex, "prop_imp_age_group_sex_2010.xlsx" 
 prop_lgb <- summary( MIcombine( with( survey_design_imp,
                                       svyciprop( formula = ~ I( sexual_identity_lgb == "LGB" ), method = "beta" ) ) ) )
 prop_lgb <- rownames_to_column( prop_lgb[ , c( "results", "(lower", "upper)" ) ], var = "subgroup" )
+colnames( prop_lgb ) <- c( "subgroup", "LGB_point_estimate_2010", "LGB_lower_ci_2010", "LGB_upper_ci_2010" )
+prop_lgb[ 1, 1 ] <- "Stockholm County"
 round( prop_lgb[ -1 ] * 100, 1 ) # proportion of LGB identity
 round( sum( d_2010$design_weight_unit_nonresponse ) * prop_lgb[ 1, 2 ], 0 ) # number of LGB population
+
+# calculate overall proportion of LGB identity by sex
+prop_lgb_sex <- summary( MIcombine( 
+  with( survey_design_imp,
+        svyby( formula = ~ I( sexual_identity_lgb == "LGB" ),
+               by = ~ sex,
+               FUN = svyciprop,
+               method = "beta" ) ) ) )
+prop_lgb_sex <- rownames_to_column( prop_lgb_sex[ , c( "results", "(lower", "upper)" ) ], var = "subgroup" )
+colnames( prop_lgb_sex ) <- c( "subgroup", "LGB_point_estimate_2010", "LGB_lower_ci_2010", "LGB_upper_ci_2010" )
+
+# calculate overall proportion of LGB identity by age
+prop_lgb_age <- summary( MIcombine( 
+  with( survey_design_imp,
+        svyby( formula = ~ I( sexual_identity_lgb == "LGB" ),
+               by = ~ age_exp,
+               FUN = svyciprop,
+               method = "beta" ) ) ) )
+prop_lgb_age <- rownames_to_column( prop_lgb_age[ , c( "results", "(lower", "upper)" ) ], var = "subgroup" )
+colnames( prop_lgb_age ) <- c( "subgroup", "LGB_point_estimate_2010", "LGB_lower_ci_2010", "LGB_upper_ci_2010" )
+
+# calculate overall proportion of LGB identity by age and sex
+prop_lgb_age_sex <- summary( MIcombine( 
+  with( survey_design_imp,
+        svyby( formula = ~ I( sexual_identity_lgb == "LGB" ),
+               by = ~ age_sex,
+               FUN = svyciprop,
+               method = "beta" ) ) ) )
+prop_lgb_age_sex <- rownames_to_column( prop_lgb_age_sex[ , c( "results", "(lower", "upper)" ) ], var = "subgroup" )
+colnames( prop_lgb_age_sex ) <- c( "subgroup", "LGB_point_estimate_2010", "LGB_lower_ci_2010", "LGB_upper_ci_2010" )
+
+prop_lgb_summary <- rbind( prop_lgb, prop_lgb_sex, prop_lgb_age, prop_lgb_age_sex  )
+writexl::write_xlsx( prop_lgb_summary, "prop_imp_lgb_2010.xlsx" )
 ```
 
 ### 6. Relation between Sexual Identity and Demographic Factors
