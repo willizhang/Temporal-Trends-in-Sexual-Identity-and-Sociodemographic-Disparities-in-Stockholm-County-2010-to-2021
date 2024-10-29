@@ -1688,26 +1688,20 @@ long_data_generation <- long_data_generation %>%
   mutate( identity = factor( identity, levels = c( "Heterosexual", "Bisexual", "Homosexual", "Other" ) ) )
 summary( long_data_generation )
 
-
-# plotting for bisexual and homosexual identities
+# plotting for homosexual and bisexual identities
 ggplot( drop_na( long_data_generation %>% 
                    filter( identity %in% c( "Bisexual", "Homosexual" ) ) ),
-        aes( x = year, y = proportion, color = generation, linetype = sex, group = interaction( generation, sex ) ) ) +
+        aes( x = year, y = proportion, color = generation, group = generation ) ) +
   
   geom_line( linewidth = 0.5 ) + 
   geom_point( size = 2 ) +
   
-  scale_x_discrete( expand = c( 0.05, 0 ) ) +
-  scale_y_continuous( labels = scales::percent ) +
-  
-  scale_color_manual( values = c( "#C77CFF", "#7CAE00", "orange", "#00BFC4", "#F8766D", "brown" ),
-                      breaks = c( "Generation Z (1997–2012)", "Millennials (1981–1996)", "Generation X (1965–1980)", "Baby Boomers (1946–1964)", "Silent Generation (1928–1945)", "Greatest Generation (1901–1927)" ),
-                      labels = c( "Generation Z (1997–2012)ᵃ", "Millennials (1981–1996)", "Generation X (1965–1980)", "Baby Boomers (1946–1964)", "Silent Generation (1928–1945)", "Greatest Generation (1901–1927)" ),
-                      guide = guide_legend( nrow = 6 ) ) +
-  
-  scale_linetype_manual( values = c( "solid", "dotdash" ),
-                         breaks = c( "Female", "Male" ),
-                         guide = guide_legend( nrow = 2 ) ) + 
+  scale_x_discrete( expand = c( 0.05, 0 ), position = "bottom" ) +
+
+  scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#7CAE00", "#F8766D", "orange", "brown" ),
+                      breaks = c( "Generation Z (1997–2012)", "Generation X (1965–1980)", "Silent Generation (1928–1945)", "Millennials (1981–1996)", "Baby Boomers (1946–1964)", "Greatest Generation (1901–1927)" ),
+                      labels = c( "Generation Z (1997–2012)ᵃ    ", "Generation X (1965–1980)    ", "Silent Generation (1928–1945)   ", "Millennials (1981–1996)", "Baby Boomers (1946–1964)", "Greatest Generation (1901–1927)" ),
+                      guide = guide_legend( nrow = 3 ) ) +
   
   labs(
     x = "Survey Year",
@@ -1720,40 +1714,36 @@ ggplot( drop_na( long_data_generation %>%
          axis.title.y = element_text( family = "Arial", size = 11 ),
          legend.text = element_text( family = "Arial", size = 10 ),
          legend.title = element_blank(),
-         legend.position = "right",
+         legend.position = "bottom",
          strip.background = element_blank(),
          strip.text = element_text( family = "Arial", size = 12 ),
-         panel.spacing = unit( 2, "lines" ) ) +
+         panel.spacing.y = unit( 2, "lines" ),
+         panel.spacing.x = unit( 1.5, "lines" )  ) +
   
-  facet_wrap( ~ identity, 
-              ncol = 1, 
-              scales = "free_y",
-              labeller = labeller( identity = c( "Homosexual" = "Homosexual Identity",
-                                                 "Bisexual" = "Bisexual Identity" ) ) ) +
+  facet_grid( identity ~ sex,
+              switch = "y",
+              scales = "free_y" ) + 
+  
   ggh4x::facetted_pos_scales( y = list(
-    identity == "Homosexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.04 ), breaks = c( 0, 0.01, 0.02, 0.03, 0.04 ) ),
-    identity == "Bisexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.15 ), breaks = c( 0, 0.05, 0.1, 0.15 ) )
+    identity == "Bisexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.152 ), breaks = c( 0, 0.05, 0.1, 0.15 ) ),
+    identity == "Homosexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.04 ), breaks = c( 0, 0.01, 0.02, 0.03, 0.04 ) )
   ) )
+
 
 # plotting for heterosexual and other identities
 ggplot( drop_na( long_data_generation %>% 
-                   filter( identity %in% c( "Heterosexual", "Other" ) ) ), 
-        aes( x = year, y = proportion, color = generation, linetype = sex, group = interaction( generation, sex ) ) ) +
+                   filter( identity %in% c( "Heterosexual", "Other" ) ) ),
+        aes( x = year, y = proportion, color = generation, group = generation ) ) +
   
   geom_line( linewidth = 0.5 ) + 
   geom_point( size = 2 ) +
   
-  scale_x_discrete( expand = c( 0.05, 0 ) ) +
-  scale_y_continuous( labels = scales::percent ) +
+  scale_x_discrete( expand = c( 0.05, 0 ), position = "bottom" ) +
   
-  scale_color_manual( values = c( "#C77CFF", "#7CAE00", "orange", "#00BFC4", "#F8766D", "brown" ),
-                      breaks = c( "Generation Z (1997–2012)", "Millennials (1981–1996)", "Generation X (1965–1980)", "Baby Boomers (1946–1964)", "Silent Generation (1928–1945)", "Greatest Generation (1901–1927)" ),
-                      labels = c( "Generation Z (1997–2012)ᵇ", "Millennials (1981–1996)", "Generation X (1965–1980)", "Baby Boomers (1946–1964)", "Silent Generation (1928–1945)", "Greatest Generation (1901–1927)" ),
-                      guide = guide_legend( nrow = 6 ) ) +
-  
-  scale_linetype_manual( values = c( "solid", "dotdash" ),
-                         breaks = c( "Female", "Male" ),
-                         guide = guide_legend( nrow = 2 ) ) + 
+  scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#7CAE00", "#F8766D", "orange", "brown" ),
+                      breaks = c( "Generation Z (1997–2012)", "Generation X (1965–1980)", "Silent Generation (1928–1945)", "Millennials (1981–1996)", "Baby Boomers (1946–1964)", "Greatest Generation (1901–1927)" ),
+                      labels = c( "Generation Z (1997–2012)ᵇ    ", "Generation X (1965–1980)    ", "Silent Generation (1928–1945)   ", "Millennials (1981–1996)", "Baby Boomers (1946–1964)", "Greatest Generation (1901–1927)" ),
+                      guide = guide_legend( nrow = 3 ) ) +
   
   labs(
     x = "Survey Year",
@@ -1766,19 +1756,21 @@ ggplot( drop_na( long_data_generation %>%
          axis.title.y = element_text( family = "Arial", size = 11 ),
          legend.text = element_text( family = "Arial", size = 10 ),
          legend.title = element_blank(),
-         legend.position = "right",
+         legend.position = "bottom",
          strip.background = element_blank(),
          strip.text = element_text( family = "Arial", size = 12 ),
-         panel.spacing = unit( 2, "lines" ) ) +
+         panel.spacing.y = unit( 2, "lines" ),
+         panel.spacing.x = unit( 1.5, "lines" )  ) +
   
-  facet_wrap( ~ identity, 
-              ncol = 1, 
+  facet_grid( identity ~ sex,
+              switch = "y",
               scales = "free_y",
-              labeller = labeller( identity = c( "Heterosexual" = "Heterosexual Identity",
-                                                 "Other" = "Other Identitiesᵃ" ) ) ) +
+              labeller = labeller( identity = c( "Heterosexual" = "Heterosexual",
+                                                 "Other" = "Otherᵃ" ) ) ) + 
+  
   ggh4x::facetted_pos_scales( y = list(
-    identity == "Heterosexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0.65, 1 ), breaks = c( 0.7, 0.8, 0.9, 1 ) ),
-    identity == "Other" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.35 ), breaks = c( 0, 0.1, 0.2, 0.3 ) )
+    identity == "Heterosexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0.6, 1 ), breaks = c( 0.6, 0.7, 0.8, 0.9, 1 ) ),
+    identity == "Other" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.4 ), breaks = c( 0, 0.1, 0.2, 0.3, 0.4 ) )
   ) )
 ```
 
@@ -1917,27 +1909,27 @@ long_data_age_group <- prop_imp_age_group_merged %>%
 
 ##### 2.9.2. Plotting
 ```{r}
-# plotting for bisexual and homosexual identities
+# plotting for bisexual identity
 ggplot( long_data_age_group %>%
-          filter( Sexuality %in% c( "Bisexual", "Homosexual" ) ), 
+          filter( Sexuality %in% c( "Bisexual" ) ), 
         aes( x = new_subgroup, y = Value, color = sex, linetype = Year,  group = interaction( sex, Year ) ) ) +
   
   geom_line( linewidth = 0.5 ) +
   
-  scale_y_continuous( labels = scales::percent ) +
+  scale_y_continuous( labels = scales::percent, limits = c( 0, 0.2 ), breaks = c( 0, 0.05, 0.1, 0.15, 0.2 ) ) +
   
   scale_linetype_manual( values = c( "dotdash", "dashed", "solid" ),
                          breaks = c( "2010", "2014", "2021" ),
                          labels = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ),
-                         guide = guide_legend( nrow = 3 )
+                         guide = guide_legend( nrow = 1 )
   ) +
   
   scale_color_manual( values = c( "#F8766D", "#00BFC4" ),
                       breaks = c( "Female", "Male"),
-                      guide = guide_legend( nrow = 2 ) ) +
+                      guide = guide_legend( nrow = 1 ) ) +
   
   labs( x = "Age Group (Years)ᵃ", 
-        y = "Proportion"
+        y = "Proportion of Bisexual Identity"
         ) +
   
   theme_classic() +
@@ -1947,45 +1939,31 @@ ggplot( long_data_age_group %>%
          axis.title.y = element_text( family = "Arial", size = 11 ),
          legend.text = element_text( family = "Arial", size = 10 ),
          legend.title = element_blank(),
-         legend.position = "right",
-         strip.background = element_blank(),
-         strip.text = element_text( family = "Arial", size = 12 ),
-         panel.spacing = unit( 2, "lines" ) ) +
-  
-  facet_wrap( ~ Sexuality,
-              ncol = 1, 
-              scales = "free_y",
-              labeller = labeller( Sexuality = c( "Homosexual" = "Homosexual Identity",
-                                                  "Bisexual" = "Bisexual Identity" ) ) ) +
-  
-  ggh4x::facetted_pos_scales( y = list(
-    Sexuality == "Homosexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.08 ), breaks = c( 0, 0.02, 0.04, 0.06, 0.08 ) ),
-    Sexuality == "Bisexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.2 ), breaks = c( 0, 0.05, 0.1, 0.15, 0.2 ) )
-  ) )
+         legend.position = "bottom" )
 
 
-# plotting for heterosexual and other identities
+# plotting for homosexual identity
 ggplot( long_data_age_group %>%
-          filter( Sexuality %in% c( "Heterosexual", "Other" ) ), 
+          filter( Sexuality %in% c( "Homosexual" ) ), 
         aes( x = new_subgroup, y = Value, color = sex, linetype = Year,  group = interaction( sex, Year ) ) ) +
   
   geom_line( linewidth = 0.5 ) +
   
-  scale_y_continuous( labels = scales::percent ) +
+  scale_y_continuous( labels = scales::percent, limits = c( 0, 0.08 ), breaks = c( 0, 0.02, 0.04, 0.06, 0.08 ) ) +
   
   scale_linetype_manual( values = c( "dotdash", "dashed", "solid" ),
                          breaks = c( "2010", "2014", "2021" ),
                          labels = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ),
-                         guide = guide_legend( nrow = 3 )
+                         guide = guide_legend( nrow = 1 )
   ) +
   
   scale_color_manual( values = c( "#F8766D", "#00BFC4" ),
                       breaks = c( "Female", "Male"),
-                      guide = guide_legend( nrow = 2 ) ) +
+                      guide = guide_legend( nrow = 1 ) ) +
   
-  labs( x = "Age Group (Years)ᵇ", 
-        y = "Proportion"
-        ) +
+  labs( x = "Age Group (Years)ᵃ", 
+        y = "Proportion of Homosexual Identity"
+  ) +
   
   theme_classic() +
   theme( axis.title.x = element_text( family = "Arial", size = 11 ),
@@ -1994,21 +1972,216 @@ ggplot( long_data_age_group %>%
          axis.title.y = element_text( family = "Arial", size = 11 ),
          legend.text = element_text( family = "Arial", size = 10 ),
          legend.title = element_blank(),
-         legend.position = "right",
+         legend.position = "bottom" )
+
+
+# plotting for heterosexual identity
+ggplot( long_data_age_group %>%
+          filter( Sexuality %in% c( "Heterosexual" ) ), 
+        aes( x = new_subgroup, y = Value, color = sex, linetype = Year,  group = interaction( sex, Year ) ) ) +
+  
+  geom_line( linewidth = 0.5 ) +
+  
+  scale_y_continuous( labels = scales::percent, limits = c( 0.6, 1 ), breaks = c( 0.6, 0.7, 0.8, 0.9, 1 ) ) +
+  
+  scale_linetype_manual( values = c( "dotdash", "dashed", "solid" ),
+                         breaks = c( "2010", "2014", "2021" ),
+                         labels = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ),
+                         guide = guide_legend( nrow = 1 )
+  ) +
+  
+  scale_color_manual( values = c( "#F8766D", "#00BFC4" ),
+                      breaks = c( "Female", "Male"),
+                      guide = guide_legend( nrow = 1 ) ) +
+  
+  labs( x = "Age Group (Years)ᵃ", 
+        y = "Proportion of Heterosexual Identity"
+  ) +
+  
+  theme_classic() +
+  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11, angle = 45, vjust = 0.5, hjust = 0.5 ),
+         axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.title = element_blank(),
+         legend.position = "bottom" )
+
+
+# plotting for other identities
+ggplot( long_data_age_group %>%
+          filter( Sexuality %in% c( "Other" ) ), 
+        aes( x = new_subgroup, y = Value, color = sex, linetype = Year,  group = interaction( sex, Year ) ) ) +
+  
+  geom_line( linewidth = 0.5 ) +
+  
+  scale_y_continuous( labels = scales::percent, limits = c( 0, 0.2 ), breaks = c( 0, 0.05, 0.1, 0.15, 0.2 ) ) +
+  
+  scale_linetype_manual( values = c( "dotdash", "dashed", "solid" ),
+                         breaks = c( "2010", "2014", "2021" ),
+                         labels = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ),
+                         guide = guide_legend( nrow = 1 )
+  ) +
+  
+  scale_color_manual( values = c( "#F8766D", "#00BFC4" ),
+                      breaks = c( "Female", "Male"),
+                      guide = guide_legend( nrow = 1 ) ) +
+  
+  labs( x = "Age Group (Years)ᵃ", 
+        y = "Proportion of Other Identitiesᵇ"
+  ) +
+  
+  theme_classic() +
+  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11, angle = 45, vjust = 0.5, hjust = 0.5 ),
+         axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.title = element_blank(),
+         legend.position = "bottom" )
+```
+
+#### 2.10. LGB identity by sex
+##### 2.10.1. Prepare dataset for plotting
+```{r}
+# datasets for proportion of sexual identity
+prop_imp_summary_2010 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_summary_2010.xlsx")
+prop_imp_summary_2014 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_summary_2014.xlsx")
+prop_imp_summary_2021 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_summary_2021.xlsx")
+
+prop_imp_summary_2010 <- prop_imp_summary_2010 %>% slice( c( 1:4, 15:24, 42 ) )
+prop_imp_summary_2014 <- prop_imp_summary_2014 %>% slice( c( 1:4, 17:26, 44 ) )
+prop_imp_summary_2021 <- prop_imp_summary_2021 %>% slice( c( 1:4, 17:26, 40 ) )
+
+# to make it easier to combine across datasets
+# a note on these changes will be added on the graph later
+prop_imp_summary_2010$subgroup[ prop_imp_summary_2010$subgroup == "18-29" ] <- "16-29"
+prop_imp_summary_2010$subgroup[ prop_imp_summary_2010$subgroup == "18-29.Male" ] <- "16-29.Male"
+prop_imp_summary_2010$subgroup[ prop_imp_summary_2010$subgroup == "18-29.Female" ] <- "16-29.Female"
+
+# merge datasets
+prop_imp_summary <- prop_imp_summary_2010 %>%
+  full_join( prop_imp_summary_2014, by = "subgroup" ) %>%
+  full_join( prop_imp_summary_2021, by = "subgroup" )
+
+prop_imp_summary_filtered <- prop_imp_summary %>%
+  select( 1, contains( "Homosexual" ), contains( "Bisexual" ) )
+
+prop_imp_lgb_2010 <- read_excel('/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_lgb_2010.xlsx')
+prop_imp_lgb_2010$subgroup[ prop_imp_lgb_2010$subgroup == "18-29" ] <- "16-29"
+prop_imp_lgb_2010$subgroup[ prop_imp_lgb_2010$subgroup == "18-29.Male" ] <- "16-29.Male"
+prop_imp_lgb_2010$subgroup[ prop_imp_lgb_2010$subgroup == "18-29.Female" ] <- "16-29.Female"
+
+prop_imp_lgb_2014 <- read_excel('/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_lgb_2014.xlsx')
+
+prop_imp_lgb_2021 <- read_excel('/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_lgb_2021.xlsx')
+
+prop_imp_lgb_summary <- prop_imp_summary_filtered %>%
+  full_join( prop_imp_lgb_2010, by = "subgroup" ) %>%
+  full_join( prop_imp_lgb_2014, by = "subgroup" ) %>%
+  full_join( prop_imp_lgb_2021, by = "subgroup" )
+
+str( prop_imp_lgb_summary )
+
+# convert the data into long format
+prop_imp_lgb_summary_long <- prop_imp_lgb_summary %>%
+  pivot_longer(
+    cols = -subgroup,
+    names_to = c( "sexual_identity", "measure", "year" ),
+    names_pattern = "(Homosexual|Bisexual|LGB)_(.*)_(\\d{4})",
+    values_to = "value"
+    ) %>%
+  pivot_wider(
+    names_from = measure,
+    values_from = value
+    )
+```
+
+##### 2.10.2. Plotting
+```{r}
+# by sex
+ggplot( prop_imp_lgb_summary_long %>% 
+          filter( subgroup %in% c( "Male", "Female" ) ),
+        aes( x = year, y = point_estimate, color = sexual_identity, group = sexual_identity ) ) +
+  
+  geom_line( linewidth = 0.5 ) + 
+  geom_point( size = 2 ) +
+  
+  geom_errorbar( aes( ymin = lower_ci, ymax = upper_ci ), width = 0.1 ) +
+  
+  scale_x_discrete( expand = c( 0.1, 0 ) ) +
+  scale_y_continuous( labels = scales::percent, 
+                      limits = c( 0, 0.07 ), 
+                      breaks = c( 0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07 ) ) +
+  
+  scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#F8766D"  ),
+                      breaks = c( "Bisexual", "Homosexual", "LGB" ),
+                      guide = guide_legend( nrow = 1 ) ) +
+  
+  labs(
+    x = "Survey Year",
+    y = "Proportion (95% CI)" ) +
+  
+  theme_classic() +
+  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.title = element_blank(),
+         legend.position = "bottom",
          strip.background = element_blank(),
          strip.text = element_text( family = "Arial", size = 12 ),
-         panel.spacing = unit( 2, "lines" ) ) +
+         panel.spacing = unit( 1.5, "lines" ) ) +
   
-  facet_wrap( ~ Sexuality,
-              ncol = 1, 
-              scales = "free_y",
-              labeller = labeller( Sexuality = c( "Heterosexual" = "Heterosexual Identity",
-                                                  "Other" = "Other Identitiesᵃ" ) ) ) +
+  facet_grid( ~ subgroup,
+              switch = "y" )
+```
+
+```{r}
+# by age
+ggplot( prop_imp_lgb_summary_long %>% 
+          filter( subgroup %in% c( "16-29", "30-44", "45-59", ">=60" ) ) %>%
+          mutate( subgroup = factor( subgroup,
+                                     levels = c( "16-29", "30-44", "45-59", ">=60" ) ) ),
+        aes( x = year, y = point_estimate, color = sexual_identity, group = sexual_identity ) ) +
   
-  ggh4x::facetted_pos_scales( y = list(
-    Sexuality == "Heterosexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0.6, 1 ), breaks = c( 0.6, 0.7, 0.8, 0.9, 1 ) ),
-    Sexuality == "Other" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.2 ), breaks = c( 0, 0.05, 0.1, 0.15, 0.2 ) )
-  ) )
+  geom_line( linewidth = 0.5 ) + 
+  geom_point( size = 2 ) +
+  
+  geom_errorbar( aes( ymin = lower_ci, ymax = upper_ci ), width = 0.1 ) +
+  
+  scale_x_discrete( expand = c( 0.1, 0 ) ) +
+  scale_y_continuous( labels = scales::percent, 
+                      limits = c( 0, 0.125 ), 
+                      breaks = c( 0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12 ) ) +
+  
+  scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#F8766D" ),
+                      breaks = c( "Bisexual", "Homosexual", "LGB" ),
+                      guide = guide_legend( nrow = 1 ) ) +
+  
+  labs(
+    x = "Survey Year",
+    y = "Proportion (95% CI)" ) +
+  
+  theme_classic() +
+  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.title = element_blank(),
+         legend.position = "bottom",
+         strip.background = element_blank(),
+         strip.text = element_text( family = "Arial", size = 12 ),
+         panel.spacing = unit( 1.5, "lines" ) ) +
+  
+  facet_grid( ~ subgroup,
+              switch = "y",
+              labeller = labeller( subgroup = c( "16-29" = "16–29 yrsᵃ",
+                                                 "30-44" = "30–44 yrs",
+                                                 "45-59" = "45–59 yrs",
+                                                 ">=60" = "\u2265 60 yrs" ) ) ) 
 ```
 
 ### 3. Plots for Relation between Sexual Identity and Demographic Factors
