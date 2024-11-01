@@ -1696,7 +1696,7 @@ ggplot( drop_na( long_data_generation %>%
   geom_line( linewidth = 0.5 ) + 
   geom_point( size = 2 ) +
   
-  scale_x_discrete( expand = c( 0.05, 0 ), position = "bottom" ) +
+  scale_x_discrete( expand = c( 0.075, 0 ), position = "bottom" ) +
 
   scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#7CAE00", "#F8766D", "orange", "brown" ),
                       breaks = c( "Generation Z (1997–2012)", "Generation X (1965–1980)", "Silent Generation (1928–1945)", "Millennials (1981–1996)", "Baby Boomers (1946–1964)", "Greatest Generation (1901–1927)" ),
@@ -2182,6 +2182,59 @@ ggplot( prop_imp_lgb_summary_long %>%
                                                  "30-44" = "30–44 yrs",
                                                  "45-59" = "45–59 yrs",
                                                  ">=60" = "\u2265 60 yrs" ) ) ) 
+```
+
+```{r}
+# by age and sex
+prop_imp_lgb_summary_long_filtered <- 
+  prop_imp_lgb_summary_long %>% slice( c( 55:126 ) ) %>%
+  separate( subgroup, into = c( "subgroup", "sex" ), sep = "\\." )
+
+ggplot( prop_imp_lgb_summary_long_filtered %>% 
+          mutate( subgroup = factor( subgroup,
+                                     levels = c( "16-29", "30-44", "45-59", ">=60" ) ) ),
+        aes( x = year, y = point_estimate, color = sexual_identity, group = sexual_identity ) ) +
+  
+  geom_line( linewidth = 0.5 ) + 
+  geom_point( size = 2 ) +
+  
+  geom_errorbar( aes( ymin = lower_ci, ymax = upper_ci ), width = 0.1 ) +
+  
+  scale_x_discrete( expand = c( 0.1, 0 ) ) +
+  
+  scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#F8766D" ),
+                      breaks = c( "Bisexual", "Homosexual", "LGB" ),
+                      guide = guide_legend( nrow = 1 ) ) +
+  
+  labs(
+    x = "Survey Year",
+    y = "Proportion (95% CI)" ) +
+  
+  theme_classic() +
+  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.title = element_blank(),
+         legend.position = "bottom",
+         strip.background = element_blank(),
+         strip.text = element_text( family = "Arial", size = 12 ),
+         panel.spacing.y = unit( 2, "lines" ),
+         panel.spacing.x = unit( 1.5, "lines" ) ) +
+  
+  facet_grid( sex ~ subgroup,
+              switch = "y",
+              scales = "free_y",
+              labeller = labeller( subgroup = c( "16-29" = "16–29 yrsᵃ",
+                                                 "30-44" = "30–44 yrs",
+                                                 "45-59" = "45–59 yrs",
+                                                 ">=60" = "\u2265 60 yrs" ) ) ) +
+  
+  ggh4x::facetted_pos_scales( y = list(
+    sex == "Female" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.2 ), breaks = c( 0, 0.05, 0.10, 0.15, 0.20 ) ),
+    sex == "Male" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.09 ), breaks = c( 0, 0.03, 0.06, 0.09 ) )
+  ) )
 ```
 
 ### 3. Plots for Relation between Sexual Identity and Demographic Factors
