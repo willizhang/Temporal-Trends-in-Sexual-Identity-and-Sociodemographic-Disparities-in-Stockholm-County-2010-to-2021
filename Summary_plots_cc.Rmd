@@ -1,7 +1,7 @@
 ---
 title: "Summary plots of complete-case analyses"
-author: Guoqiang Zhang
-email: guoqiang.zhang@ki.se
+author: Willi Zhang
+email: willi.zhang@ki.se
 output: html_notebook
 editor_options: 
   chunk_output_type: console

@@ -1,7 +1,7 @@
 ---
 title: "Self-reported sexual identity in Stockholm County in 2014"
-author: Guoqiang Zhang, Maya Mathur, Matteo Quartagno
-email: guoqiang.zhang@ki.se
+author: Willi Zhang, Maya Mathur, Matteo Quartagno
+email: willi.zhang@ki.se
 output: html_notebook
 editor_options: 
   chunk_output_type: console

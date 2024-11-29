@@ -24,7 +24,7 @@ The R scripts include:
 The datasets generated and/or analyzed during the current study are not publicly available due to privacy and ethical reasons, but can be accessed after approved ethics application to the Steering Committee of the [Stockholm Public Health Cohort](https://www.ces.regionstockholm.se/projekt-och-uppdrag/halsa-stockholm/SPHC-data/).
 
 **Contact**<br>
-For any queries related to this repository, please contact: Willi Zhang, Email: guoqiang.zhang@ki.se.
+For any queries related to this repository, please contact: [Willi Zhang](https://ki.se/en/people/willi-zhang), Email: willi.zhang@ki.se.
 
 **License**<br>
 This work is licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/) (CC BY 4.0), which allows others to distribute, remix, adapt, and build upon the work, with appropriate credit to the original authors.

@@ -1,6 +1,6 @@
 # title: "Helper functions"
-# author: Guoqiang Zhang
-# email: guoqiang.zhang@ki.se
+# author: Willi Zhang
+# email: willi.zhang@ki.se
 
 
 ##### Function for Weighted Regression Models #####
