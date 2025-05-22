@@ -18,7 +18,8 @@ library(survey)
 library(svyVGAM)
 library(vcd)
 library(rcompanion)
-source("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/Helper_functions.R") # helper function
+library(here)
+source(here("Helper_functions.R")) # helper function
 ```
 
 ### 2. Import and Prepare Data
@@ -277,6 +278,21 @@ x9
 format( round( fisher.test( x9[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x9[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x9[, c( 1, 4 ) ] )$p.value, 3 ), nsmall = 3 )
+
+# make characteristics table by whether sexual identity is missing
+d_2014 <- d_2014 %>%
+  mutate( sexual_identity_reported = ifelse( is.na( sexual_identity_2014 ), "missing", "reported" ) ) %>%
+  mutate( sexual_identity_reported = factor ( sexual_identity_reported, levels = c( "reported", "missing" ) ) )
+
+dependent = "sexual_identity_reported"
+
+d_2014_table_2 <- d_2014 %>% 
+  summary_factorlist( dependent,
+                      explanatory, 
+                      total_col = TRUE,
+                      add_col_totals = TRUE,
+                      column = TRUE )
+d_2014_table_2
 
 
 ##### design weights #####

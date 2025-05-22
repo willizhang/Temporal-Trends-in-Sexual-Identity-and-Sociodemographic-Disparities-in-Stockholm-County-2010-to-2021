@@ -18,7 +18,8 @@ library(survey)
 library(svyVGAM)
 library(vcd)
 library(rcompanion)
-source("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/Helper_functions.R") # helper function
+library(here)
+source(here("Helper_functions.R")) # helper function
 ```
 
 ### 2. Import and Prepare Data
@@ -137,6 +138,7 @@ table( d_2021$education, useNA = "always" )
 # disposable income
 summary( d_2021$dispink2021, useNA = "always" )
 d_2021$dispink2021[ d_2021$dispink2021 < 0 ] <- NA
+d_2021$dispink2021 <- d_2021$dispink2021*( 343.19/335.92 ) # Consumer Price Index (CPI)-adjusted income using the year 2021 as the reference (https://www.statistikdatabasen.scb.se/pxweb/en/ssd/START__PR__PR0101__PR0101L/KPIFastAmed/table/tableViewLayout1/)
 d_2021$income <- factor( ifelse( d_2021$dispink2021 <= 2500, "<=2,500",
                                  ifelse( d_2021$dispink2021 > 2500 & d_2021$dispink2021 <= 3500, "(2,500, 3,500]",
                                          ifelse( d_2021$dispink2021 > 3500 & d_2021$dispink2021 <= 4500, "(3,500, 4,500]", ">4,500" ) ) ),
@@ -239,6 +241,21 @@ x7
 format( round( fisher.test( x7[, c( 1:2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x7[, c( 1, 3 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x7[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+# make characteristics table by whether sexual identity is missing
+d_2021 <- d_2021 %>%
+  mutate( sexual_identity_reported = ifelse( is.na( sexual_identity_2021 ), "missing", "reported" ) ) %>%
+  mutate( sexual_identity_reported = factor ( sexual_identity_reported, levels = c( "reported", "missing" ) ) )
+
+dependent = "sexual_identity_reported"
+
+d_2021_table_2 <- d_2021 %>% 
+  summary_factorlist( dependent,
+                      explanatory, 
+                      total_col = TRUE,
+                      add_col_totals = TRUE,
+                      column = TRUE )
+d_2021_table_2
 
 
 ##### design weights #####
@@ -562,7 +579,7 @@ ggplot( all_data_2021[ !is.na( all_data_2021$education ), ],
 
 # income
 summary( all_data_2021$income )
-nrow( all_data_2021[ all_data_2021$income < 0 & !is.na( all_data_2021$income ), ] ) #  152 imputed values are negative
+nrow( all_data_2021[ all_data_2021$income < 0 & !is.na( all_data_2021$income ), ] ) #  194 imputed values are negative
 ```
 
 #### 4.5. Prepare for survey analyses
