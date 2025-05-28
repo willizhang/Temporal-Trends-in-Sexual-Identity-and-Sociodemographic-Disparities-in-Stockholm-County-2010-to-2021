@@ -16,18 +16,20 @@ library(dplyr)
 library(tidyr)
 library(tibble)
 library(ggplot2)
+library(ragg)
 library(ggbreak)
 library(naniar)
 library(ggh4x)
+library(here)
 ```
 
 ### 2. Plots for Proportion of Sexual Identity
 #### 2.1. Prepare dataset for plotting
 ```{r}
 # datasets for proportion of sexual identity
-prop_imp_summary_2010 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_summary_2010.xlsx")
-prop_imp_summary_2014 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_summary_2014.xlsx")
-prop_imp_summary_2021 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_summary_2021.xlsx")
+prop_imp_summary_2010 <- read_excel(here("prop_imp_summary_2010.xlsx"))
+prop_imp_summary_2014 <- read_excel(here("prop_imp_summary_2014.xlsx"))
+prop_imp_summary_2021 <- read_excel(here("prop_imp_summary_2021.xlsx"))
 
 prop_imp_summary_2010 <- prop_imp_summary_2010 %>% slice( -c( 5:14 ) )
 prop_imp_summary_2014 <- prop_imp_summary_2014 %>% slice( -c( 5:16 ) )
@@ -684,6 +686,7 @@ p_imp_homosexual <- edit_plot( p_imp_homosexual,
                               )
 
 plot( p_imp_homosexual )
+ggsave( "Final_plots/p_imp_homosexual.svg", plot = p_imp_homosexual, width = 12.3, height = 8 )
 ```
 
 #### 2.4. Bisexual group
@@ -964,6 +967,7 @@ p_imp_bisexual <- edit_plot( p_imp_bisexual,
                             )
 
 plot( p_imp_bisexual )
+ggsave( "Final_plots/p_imp_bisexual.svg", plot = p_imp_bisexual, width = 12.3, height = 8 )
 ```
 
 #### 2.5. Other group
@@ -1658,9 +1662,9 @@ plot( p_imp_age_sex )
 #### 2.7. By generation and sex
 ```{r}
 # datasets for proportion of sexual identity
-prop_imp_summary_2010_generation <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_summary_2010.xlsx")
-prop_imp_summary_2014_generation <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_summary_2014.xlsx")
-prop_imp_summary_2021_generation <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_summary_2021.xlsx")
+prop_imp_summary_2010_generation <- read_excel(here("prop_imp_summary_2010.xlsx"))
+prop_imp_summary_2014_generation <- read_excel(here("prop_imp_summary_2014.xlsx"))
+prop_imp_summary_2021_generation <- read_excel(here("prop_imp_summary_2021.xlsx"))
 
 prop_imp_summary_2010_generation <- prop_imp_summary_2010_generation %>% slice( 5:14 )
 prop_imp_summary_2014_generation <- prop_imp_summary_2014_generation %>% slice( 5:16 )
@@ -1689,6 +1693,7 @@ long_data_generation <- long_data_generation %>%
 summary( long_data_generation )
 
 # plotting for homosexual and bisexual identities
+p_generation_sex <- 
 ggplot( drop_na( long_data_generation %>% 
                    filter( identity %in% c( "Bisexual", "Homosexual" ) ) ),
         aes( x = year, y = proportion, color = generation, group = generation ) ) +
@@ -1729,6 +1734,9 @@ ggplot( drop_na( long_data_generation %>%
     identity == "Homosexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.04 ), breaks = c( 0, 0.01, 0.02, 0.03, 0.04 ) )
   ) )
 
+p_generation_sex
+ggsave( "Final_plots/p_imp_generation_sex.svg", plot = p_generation_sex, width = 7, height = 6 )
+
 
 # plotting for heterosexual and other identities
 ggplot( drop_na( long_data_generation %>% 
@@ -1742,7 +1750,7 @@ ggplot( drop_na( long_data_generation %>%
   
   scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#7CAE00", "#F8766D", "orange", "brown" ),
                       breaks = c( "Generation Z (1997–2012)", "Generation X (1965–1980)", "Silent Generation (1928–1945)", "Millennials (1981–1996)", "Baby Boomers (1946–1964)", "Greatest Generation (1901–1927)" ),
-                      labels = c( "Generation Z (1997–2012)ᵇ    ", "Generation X (1965–1980)    ", "Silent Generation (1928–1945)   ", "Millennials (1981–1996)", "Baby Boomers (1946–1964)", "Greatest Generation (1901–1927)" ),
+                      labels = c( "Generation Z (1997–2012)ᵃ    ", "Generation X (1965–1980)    ", "Silent Generation (1928–1945)   ", "Millennials (1981–1996)", "Baby Boomers (1946–1964)", "Greatest Generation (1901–1927)" ),
                       guide = guide_legend( nrow = 3 ) ) +
   
   labs(
@@ -1766,7 +1774,7 @@ ggplot( drop_na( long_data_generation %>%
               switch = "y",
               scales = "free_y",
               labeller = labeller( identity = c( "Heterosexual" = "Heterosexual",
-                                                 "Other" = "Otherᵃ" ) ) ) + 
+                                                 "Other" = "Otherᵇ" ) ) ) + 
   
   ggh4x::facetted_pos_scales( y = list(
     identity == "Heterosexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0.6, 1 ), breaks = c( 0.6, 0.7, 0.8, 0.9, 1 ) ),
@@ -1776,15 +1784,15 @@ ggplot( drop_na( long_data_generation %>%
 
 #### 2.8. Proportion by varing age cut-offs
 ```{r}
-prop_imp_age_iteration_2010 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_age_iteration_2010.xlsx") %>%
+prop_imp_age_iteration_2010 <- read_excel(here("prop_imp_age_iteration_2010.xlsx")) %>%
   filter( subgroup == 'young' ) %>%
   select( -subgroup )
 
-prop_imp_age_iteration_2014 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_age_iteration_2014.xlsx") %>%
+prop_imp_age_iteration_2014 <- read_excel(here("prop_imp_age_iteration_2014.xlsx")) %>%
   filter( subgroup == 'young' ) %>%
   select( -subgroup )
 
-prop_imp_age_iteration_2021 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_age_iteration_2021.xlsx") %>%
+prop_imp_age_iteration_2021 <- read_excel(here("prop_imp_age_iteration_2021.xlsx")) %>%
   filter( subgroup == 'young' ) %>%
   select( -subgroup )
 
@@ -1850,13 +1858,13 @@ ggplot( long_data,
 #### 2.9. By age group and sex
 ##### 2.9.1. Prepare dataset for plotting
 ```{r}
-prop_imp_age_group_2010 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_age_group_sex_2010.xlsx") %>%
+prop_imp_age_group_2010 <- read_excel(here("prop_imp_age_group_sex_2010.xlsx")) %>%
   select( "subgroup", "Heterosexual_point_estimate_2010", "Homosexual_point_estimate_2010", "Bisexual_point_estimate_2010", "Other_point_estimate_2010" )
 
-prop_imp_age_group_2014 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_age_group_sex_2014.xlsx") %>%
+prop_imp_age_group_2014 <- read_excel(here("prop_imp_age_group_sex_2014.xlsx")) %>%
   select( "subgroup", "Heterosexual_point_estimate_2014", "Homosexual_point_estimate_2014", "Bisexual_point_estimate_2014", "Other_point_estimate_2014" )
 
-prop_imp_age_group_2021 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_age_group_sex_2021.xlsx") %>%
+prop_imp_age_group_2021 <- read_excel(here("prop_imp_age_group_sex_2021.xlsx")) %>%
   select( "subgroup", "Heterosexual_point_estimate_2021", "Homosexual_point_estimate_2021", "Bisexual_point_estimate_2021", "Other_point_estimate_2021" )
 
 prop_imp_age_group_2010$subgroup[ prop_imp_age_group_2010$subgroup == "[17,19].Male" ] <- "(17,19].Male"
@@ -1910,6 +1918,7 @@ long_data_age_group <- prop_imp_age_group_merged %>%
 ##### 2.9.2. Plotting
 ```{r}
 # plotting for bisexual identity
+p_bisexual_age <- 
 ggplot( long_data_age_group %>%
           filter( Sexuality %in% c( "Bisexual" ) ), 
         aes( x = new_subgroup, y = Value, color = sex, linetype = Year,  group = interaction( sex, Year ) ) ) +
@@ -1940,6 +1949,8 @@ ggplot( long_data_age_group %>%
          legend.text = element_text( family = "Arial", size = 10 ),
          legend.title = element_blank(),
          legend.position = "bottom" )
+
+ggsave( "Final_plots/p_imp_bisexual_age.svg", plot = p_bisexual_age, width = 9, height = 5.5 )
 
 
 # plotting for homosexual identity
@@ -2045,9 +2056,9 @@ ggplot( long_data_age_group %>%
 ##### 2.10.1. Prepare dataset for plotting
 ```{r}
 # datasets for proportion of sexual identity
-prop_imp_summary_2010 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_summary_2010.xlsx")
-prop_imp_summary_2014 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_summary_2014.xlsx")
-prop_imp_summary_2021 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_summary_2021.xlsx")
+prop_imp_summary_2010 <- read_excel(here("prop_imp_summary_2010.xlsx"))
+prop_imp_summary_2014 <- read_excel(here("prop_imp_summary_2014.xlsx"))
+prop_imp_summary_2021 <- read_excel(here("prop_imp_summary_2021.xlsx"))
 
 prop_imp_summary_2010 <- prop_imp_summary_2010 %>% slice( c( 1:4, 15:24, 42 ) )
 prop_imp_summary_2014 <- prop_imp_summary_2014 %>% slice( c( 1:4, 17:26, 44 ) )
@@ -2067,14 +2078,14 @@ prop_imp_summary <- prop_imp_summary_2010 %>%
 prop_imp_summary_filtered <- prop_imp_summary %>%
   select( 1, contains( "Homosexual" ), contains( "Bisexual" ) )
 
-prop_imp_lgb_2010 <- read_excel('/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_lgb_2010.xlsx')
+prop_imp_lgb_2010 <- read_excel(here("prop_imp_lgb_2010.xlsx"))
 prop_imp_lgb_2010$subgroup[ prop_imp_lgb_2010$subgroup == "18-29" ] <- "16-29"
 prop_imp_lgb_2010$subgroup[ prop_imp_lgb_2010$subgroup == "18-29.Male" ] <- "16-29.Male"
 prop_imp_lgb_2010$subgroup[ prop_imp_lgb_2010$subgroup == "18-29.Female" ] <- "16-29.Female"
 
-prop_imp_lgb_2014 <- read_excel('/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_lgb_2014.xlsx')
+prop_imp_lgb_2014 <- read_excel(here("prop_imp_lgb_2014.xlsx"))
 
-prop_imp_lgb_2021 <- read_excel('/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_imp_lgb_2021.xlsx')
+prop_imp_lgb_2021 <- read_excel(here("prop_imp_lgb_2021.xlsx"))
 
 prop_imp_lgb_summary <- prop_imp_summary_filtered %>%
   full_join( prop_imp_lgb_2010, by = "subgroup" ) %>%
@@ -2095,11 +2106,14 @@ prop_imp_lgb_summary_long <- prop_imp_lgb_summary %>%
     names_from = measure,
     values_from = value
     )
+
+prop_imp_lgb_summary_long$sexual_identity[ prop_imp_lgb_summary_long$sexual_identity == "LGB" ] <- "Bisexual or homosexual"
 ```
 
 ##### 2.10.2. Plotting
 ```{r}
 # by sex
+p_lgb_trends_by_sex <- 
 ggplot( prop_imp_lgb_summary_long %>% 
           filter( subgroup %in% c( "Male", "Female" ) ),
         aes( x = year, y = point_estimate, color = sexual_identity, group = sexual_identity ) ) +
@@ -2115,7 +2129,7 @@ ggplot( prop_imp_lgb_summary_long %>%
                       breaks = c( 0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07 ) ) +
   
   scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#F8766D"  ),
-                      breaks = c( "Bisexual", "Homosexual", "LGB" ),
+                      breaks = c( "Bisexual", "Homosexual", "Bisexual or homosexual" ),
                       guide = guide_legend( nrow = 1 ) ) +
   
   labs(
@@ -2136,10 +2150,14 @@ ggplot( prop_imp_lgb_summary_long %>%
   
   facet_grid( ~ subgroup,
               switch = "y" )
+
+p_lgb_trends_by_sex
+ggsave( "Final_plots/p_imp_lgb_sex.svg", plot = p_lgb_trends_by_sex, width = 6, height = 5/0.9 )
 ```
 
 ```{r}
 # by age
+p_lgb_trends_by_age <- 
 ggplot( prop_imp_lgb_summary_long %>% 
           filter( subgroup %in% c( "16-29", "30-44", "45-59", ">=60" ) ) %>%
           mutate( subgroup = factor( subgroup,
@@ -2157,7 +2175,7 @@ ggplot( prop_imp_lgb_summary_long %>%
                       breaks = c( 0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12 ) ) +
   
   scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#F8766D" ),
-                      breaks = c( "Bisexual", "Homosexual", "LGB" ),
+                      breaks = c( "Bisexual", "Homosexual", "Bisexual or homosexual" ),
                       guide = guide_legend( nrow = 1 ) ) +
   
   labs(
@@ -2182,6 +2200,9 @@ ggplot( prop_imp_lgb_summary_long %>%
                                                  "30-44" = "30–44 yrs",
                                                  "45-59" = "45–59 yrs",
                                                  ">=60" = "\u2265 60 yrs" ) ) ) 
+
+p_lgb_trends_by_age
+ggsave( "Final_plots/p_imp_lgb_age.svg", plot = p_lgb_trends_by_age, width = 10, height = 5 )
 ```
 
 ```{r}
@@ -2190,6 +2211,7 @@ prop_imp_lgb_summary_long_filtered <-
   prop_imp_lgb_summary_long %>% slice( c( 55:126 ) ) %>%
   separate( subgroup, into = c( "subgroup", "sex" ), sep = "\\." )
 
+p_lgb_trends_by_age_sex <- 
 ggplot( prop_imp_lgb_summary_long_filtered %>% 
           mutate( subgroup = factor( subgroup,
                                      levels = c( "16-29", "30-44", "45-59", ">=60" ) ) ),
@@ -2203,7 +2225,7 @@ ggplot( prop_imp_lgb_summary_long_filtered %>%
   scale_x_discrete( expand = c( 0.1, 0 ) ) +
   
   scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#F8766D" ),
-                      breaks = c( "Bisexual", "Homosexual", "LGB" ),
+                      breaks = c( "Bisexual", "Homosexual", "Bisexual or homosexual" ),
                       guide = guide_legend( nrow = 1 ) ) +
   
   labs(
@@ -2235,16 +2257,19 @@ ggplot( prop_imp_lgb_summary_long_filtered %>%
     sex == "Female" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.2 ), breaks = c( 0, 0.05, 0.10, 0.15, 0.20 ) ),
     sex == "Male" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.09 ), breaks = c( 0, 0.03, 0.06, 0.09 ) )
   ) )
+
+p_lgb_trends_by_age_sex
+ggsave( "Final_plots/p_imp_lgb_age_sex.svg", plot = p_lgb_trends_by_age_sex, width = 10, height = 6 )
 ```
 
 ### 3. Plots for Relation between Sexual Identity and Demographic Factors
 #### 3.1. Prepare dataset for plotting
 ```{r}
-results_imp_pr_poisson_2010 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/results_imp_pr_poisson_2010.xlsx")
+results_imp_pr_poisson_2010 <- read_excel(here("results_imp_pr_poisson_2010.xlsx"))
 
-results_imp_pr_poisson_2014 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/results_imp_pr_poisson_2014.xlsx")
+results_imp_pr_poisson_2014 <- read_excel(here("results_imp_pr_poisson_2014.xlsx"))
 
-results_imp_pr_poisson_2021 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/results_imp_pr_poisson_2021.xlsx")
+results_imp_pr_poisson_2021 <- read_excel(here("results_imp_pr_poisson_2021.xlsx"))
 
 # to make it easier to combine across datasets
 # a note on these changes will be added on the graph later
@@ -3193,180 +3218,7 @@ plot( p_imp_pr_poisson_sexual_minority )
 ```{r}
 selected_cols <- grep( "subgroup|homosexual", colnames( results_imp_pr_poisson ), ignore.case = TRUE )
 
-results_imp_pr_poisson_homosexual <- results_imp_pr_poisson[ c( 1:3, 19:34 ), selected_cols ]
-
-results_imp_pr_poisson_homosexual <- results_imp_pr_poisson_homosexual %>% 
-  add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
-
-results_imp_pr_poisson_homosexual <- results_imp_pr_poisson_homosexual %>% 
-  add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
-
-results_imp_pr_poisson_homosexual <- results_imp_pr_poisson_homosexual %>% 
-  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
-
-results_imp_pr_poisson_homosexual <- results_imp_pr_poisson_homosexual %>%
-  add_column( temp1 = " ", .before = 2 ) %>%
-  add_column( temp2 = " ", .before = 5 ) %>%
-  add_column( temp3 = " ", .before = 8 )
-
-results_imp_pr_poisson_homosexual$subgroup[ results_imp_pr_poisson_homosexual$subgroup == "Income (100 kr/yr)ᶠ" ] <- "Income (100 kr/yr)ᵈ"
-results_imp_pr_poisson_homosexual$subgroup[ results_imp_pr_poisson_homosexual$subgroup == "Marital statusᵍ" ] <- "Marital statusᵉ"
-colnames( results_imp_pr_poisson_homosexual )[1] <- "Demographic Factor"
-
-names( results_imp_pr_poisson_homosexual )[ names( results_imp_pr_poisson_homosexual ) %in% c( "temp1", "temp2", "temp3", "Homosexual_crude", "Homosexual_model_1", "Homosexual_model_2" ) ] <- ""
-
-tm <- forest_theme(
-  base_size = 10,
-  colhead = list( fg_params = list( fontsize = 10 ) ),
-  legend_value = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ),
-  legend_name = NULL,
-  legend_position = "bottom",
-  base_family = "Arial",
-  refline_lty = "dashed",
-  refline_lwd = 1,
-  refline_col = "grey20"
-)
-
-p_imp_pr_poisson_homosexual <- forest(
-  results_imp_pr_poisson_homosexual[ , c( 1:10 ) ],
-  
-  est = list( results_imp_pr_poisson_homosexual$homosexual_point_estimate_2010_crude,
-              results_imp_pr_poisson_homosexual$homosexual_point_estimate_2010_model_1,
-              results_imp_pr_poisson_homosexual$homosexual_point_estimate_2010_model_2,
-              
-              results_imp_pr_poisson_homosexual$homosexual_point_estimate_2014_crude,
-              results_imp_pr_poisson_homosexual$homosexual_point_estimate_2014_model_1,
-              results_imp_pr_poisson_homosexual$homosexual_point_estimate_2014_model_2,
-              
-              results_imp_pr_poisson_homosexual$homosexual_point_estimate_2021_crude,
-              results_imp_pr_poisson_homosexual$homosexual_point_estimate_2021_model_1,
-              results_imp_pr_poisson_homosexual$homosexual_point_estimate_2021_model_2
-  ),
-  
-  lower = list( results_imp_pr_poisson_homosexual$homosexual_lower_ci_2010_crude,
-                results_imp_pr_poisson_homosexual$homosexual_lower_ci_2010_model_1,
-                results_imp_pr_poisson_homosexual$homosexual_lower_ci_2010_model_2,
-                
-                results_imp_pr_poisson_homosexual$homosexual_lower_ci_2014_crude,
-                results_imp_pr_poisson_homosexual$homosexual_lower_ci_2014_model_1,
-                results_imp_pr_poisson_homosexual$homosexual_lower_ci_2014_model_2,
-                
-                results_imp_pr_poisson_homosexual$homosexual_lower_ci_2021_crude,
-                results_imp_pr_poisson_homosexual$homosexual_lower_ci_2021_model_1,
-                results_imp_pr_poisson_homosexual$homosexual_lower_ci_2021_model_2
-  ),
-  
-  upper = list( results_imp_pr_poisson_homosexual$homosexual_upper_ci_2010_crude,
-                results_imp_pr_poisson_homosexual$homosexual_upper_ci_2010_model_1,
-                results_imp_pr_poisson_homosexual$homosexual_upper_ci_2010_model_2,
-                
-                results_imp_pr_poisson_homosexual$homosexual_upper_ci_2014_crude,
-                results_imp_pr_poisson_homosexual$homosexual_upper_ci_2014_model_1,
-                results_imp_pr_poisson_homosexual$homosexual_upper_ci_2014_model_2,
-                
-                results_imp_pr_poisson_homosexual$homosexual_upper_ci_2021_crude,
-                results_imp_pr_poisson_homosexual$homosexual_upper_ci_2021_model_1,
-                results_imp_pr_poisson_homosexual$homosexual_upper_ci_2021_model_2
-  ),
-  
-  ci_column = c( 3, 6, 9 ),
-  sizes = 0.4,
-  
-  ref_line = 1,
-  
-  xlim = c( 0, 4 ),
-  ticks_at = c( 0, 1, 2, 3, 4 ),
-  
-  xlab = "Proportion Ratio (95% CI)",
-  nudge_y = 0.33,
-  theme = tm
-)
-
-p_imp_pr_poisson_homosexual <- edit_plot( p_imp_pr_poisson_homosexual,
-                                          row = c( 1, 4, 8, 13, 17 ),
-                                          col = 1,
-                                          gp = gpar( fontface = "bold" ) 
-)
-
-p_imp_pr_poisson_homosexual <- add_text(
-  p_imp_pr_poisson_homosexual,
-  text = "Crude Proportion Ratio (95% CI)",
-  col = c( 3:4 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_imp_pr_poisson_homosexual <- add_text(
-  p_imp_pr_poisson_homosexual,
-  text = "Model 1, Proportion Ratio (95% CI)ᵇ",
-  col = c( 6:7 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_imp_pr_poisson_homosexual <- add_text(
-  p_imp_pr_poisson_homosexual,
-  text = "Model 2, Proportion Ratio (95% CI)ᶜ",
-  col = c( 9:10 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_imp_pr_poisson_homosexual <- insert_text(
-  p_imp_pr_poisson_homosexual,
-  text = "Homosexual Identityᵃ",
-  col = c( 3:10 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_imp_pr_poisson_homosexual <- edit_plot( p_imp_pr_poisson_homosexual,
-                                          row = c( 1, 4, 8, 13, 17 ), 
-                                          which = "background",
-                                          gp = gpar( fill = "white" )
-)
-
-p_imp_pr_poisson_homosexual <- edit_plot( p_imp_pr_poisson_homosexual,
-                                          row = c( 2, 3, 5:7, 9:12, 14:16, 18, 19 ), 
-                                          which = "background",
-                                          gp = gpar( fill = "#eff3f2" )
-)
-
-p_imp_pr_poisson_homosexual <- add_border(
-  p_imp_pr_poisson_homosexual,
-  part = "header",
-  row = 2,
-  col = c( 3:10 ),
-  where = "top",
-  gp = gpar(lwd = 1)
-)
-
-plot( p_imp_pr_poisson_homosexual )
-```
-
-##### 3.3.2. Part 2
-```{r}
-results_imp_pr_poisson_homosexual <- results_imp_pr_poisson[ c( 4:8, 15:18, 35:37 ), selected_cols ]
+results_imp_pr_poisson_homosexual <- results_imp_pr_poisson[ -c( 9:14, 23:37 ), selected_cols ]
 
 results_imp_pr_poisson_homosexual <- results_imp_pr_poisson_homosexual %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -3454,7 +3306,179 @@ p_imp_pr_poisson_homosexual <- forest(
 )
 
 p_imp_pr_poisson_homosexual <- edit_plot( p_imp_pr_poisson_homosexual,
-                                         row = c( 1, 6, 10 ),
+                                          row = c( 1, 4, 9, 13 ),
+                                          col = 1,
+                                          gp = gpar( fontface = "bold" ) 
+)
+
+p_imp_pr_poisson_homosexual <- add_text(
+  p_imp_pr_poisson_homosexual,
+  text = "Crude Proportion Ratio (95% CI)",
+  col = c( 3:4 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_imp_pr_poisson_homosexual <- add_text(
+  p_imp_pr_poisson_homosexual,
+  text = "Model 1, Proportion Ratio (95% CI)ᵇ",
+  col = c( 6:7 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_imp_pr_poisson_homosexual <- add_text(
+  p_imp_pr_poisson_homosexual,
+  text = "Model 2, Proportion Ratio (95% CI)ᶜ",
+  col = c( 9:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_imp_pr_poisson_homosexual <- insert_text(
+  p_imp_pr_poisson_homosexual,
+  text = "Homosexual Identityᵃ",
+  col = c( 3:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_imp_pr_poisson_homosexual <- edit_plot( p_imp_pr_poisson_homosexual,
+                                          row = c( 1, 4, 9, 13 ), 
+                                          which = "background",
+                                          gp = gpar( fill = "white" )
+)
+
+p_imp_pr_poisson_homosexual <- edit_plot( p_imp_pr_poisson_homosexual,
+                                          row = c( 2, 3, 5:8, 10:12, 14:16 ), 
+                                          which = "background",
+                                          gp = gpar( fill = "#eff3f2" )
+)
+
+p_imp_pr_poisson_homosexual <- add_border(
+  p_imp_pr_poisson_homosexual,
+  part = "header",
+  row = 2,
+  col = c( 3:10 ),
+  where = "top",
+  gp = gpar(lwd = 1)
+)
+
+plot( p_imp_pr_poisson_homosexual )
+ggsave( "Final_plots/p_imp_pr_homosexual_part_1.svg", plot = p_imp_pr_poisson_homosexual, width = 10.8, height = 8 )
+```
+
+##### 3.3.2. Part 2
+```{r}
+results_imp_pr_poisson_homosexual <- results_imp_pr_poisson[ -c( 1:22 ), selected_cols ]
+
+results_imp_pr_poisson_homosexual <- results_imp_pr_poisson_homosexual %>% 
+  add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
+
+results_imp_pr_poisson_homosexual <- results_imp_pr_poisson_homosexual %>% 
+  add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
+
+results_imp_pr_poisson_homosexual <- results_imp_pr_poisson_homosexual %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
+results_imp_pr_poisson_homosexual <- results_imp_pr_poisson_homosexual %>%
+  add_column( temp1 = " ", .before = 2 ) %>%
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
+
+colnames( results_imp_pr_poisson_homosexual )[1] <- "Demographic Factor"
+
+names( results_imp_pr_poisson_homosexual )[ names( results_imp_pr_poisson_homosexual ) %in% c( "temp1", "temp2", "temp3", "Homosexual_crude", "Homosexual_model_1", "Homosexual_model_2" ) ] <- ""
+
+tm <- forest_theme(
+  base_size = 10,
+  colhead = list( fg_params = list( fontsize = 10 ) ),
+  legend_value = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ),
+  legend_name = NULL,
+  legend_position = "bottom",
+  base_family = "Arial",
+  refline_lty = "dashed",
+  refline_lwd = 1,
+  refline_col = "grey20"
+)
+
+p_imp_pr_poisson_homosexual <- forest(
+  results_imp_pr_poisson_homosexual[ , c( 1:10 ) ],
+  
+  est = list( results_imp_pr_poisson_homosexual$homosexual_point_estimate_2010_crude,
+              results_imp_pr_poisson_homosexual$homosexual_point_estimate_2010_model_1,
+              results_imp_pr_poisson_homosexual$homosexual_point_estimate_2010_model_2,
+              
+              results_imp_pr_poisson_homosexual$homosexual_point_estimate_2014_crude,
+              results_imp_pr_poisson_homosexual$homosexual_point_estimate_2014_model_1,
+              results_imp_pr_poisson_homosexual$homosexual_point_estimate_2014_model_2,
+              
+              results_imp_pr_poisson_homosexual$homosexual_point_estimate_2021_crude,
+              results_imp_pr_poisson_homosexual$homosexual_point_estimate_2021_model_1,
+              results_imp_pr_poisson_homosexual$homosexual_point_estimate_2021_model_2
+  ),
+  
+  lower = list( results_imp_pr_poisson_homosexual$homosexual_lower_ci_2010_crude,
+                results_imp_pr_poisson_homosexual$homosexual_lower_ci_2010_model_1,
+                results_imp_pr_poisson_homosexual$homosexual_lower_ci_2010_model_2,
+                
+                results_imp_pr_poisson_homosexual$homosexual_lower_ci_2014_crude,
+                results_imp_pr_poisson_homosexual$homosexual_lower_ci_2014_model_1,
+                results_imp_pr_poisson_homosexual$homosexual_lower_ci_2014_model_2,
+                
+                results_imp_pr_poisson_homosexual$homosexual_lower_ci_2021_crude,
+                results_imp_pr_poisson_homosexual$homosexual_lower_ci_2021_model_1,
+                results_imp_pr_poisson_homosexual$homosexual_lower_ci_2021_model_2
+  ),
+  
+  upper = list( results_imp_pr_poisson_homosexual$homosexual_upper_ci_2010_crude,
+                results_imp_pr_poisson_homosexual$homosexual_upper_ci_2010_model_1,
+                results_imp_pr_poisson_homosexual$homosexual_upper_ci_2010_model_2,
+                
+                results_imp_pr_poisson_homosexual$homosexual_upper_ci_2014_crude,
+                results_imp_pr_poisson_homosexual$homosexual_upper_ci_2014_model_1,
+                results_imp_pr_poisson_homosexual$homosexual_upper_ci_2014_model_2,
+                
+                results_imp_pr_poisson_homosexual$homosexual_upper_ci_2021_crude,
+                results_imp_pr_poisson_homosexual$homosexual_upper_ci_2021_model_1,
+                results_imp_pr_poisson_homosexual$homosexual_upper_ci_2021_model_2
+  ),
+  
+  ci_column = c( 3, 6, 9 ),
+  sizes = 0.4,
+  
+  ref_line = 1,
+  
+  xlim = c( 0, 4 ),
+  ticks_at = c( 0, 1, 2, 3, 4 ),
+  
+  xlab = "Proportion Ratio (95% CI)",
+  nudge_y = 0.33,
+  theme = tm
+)
+
+p_imp_pr_poisson_homosexual <- edit_plot( p_imp_pr_poisson_homosexual,
+                                         row = c( 1, 6, 10, 13 ),
                                          col = 1,
                                          gp = gpar( fontface = "bold" ) 
 )
@@ -3512,13 +3536,13 @@ p_imp_pr_poisson_homosexual <- insert_text(
 )
 
 p_imp_pr_poisson_homosexual <- edit_plot( p_imp_pr_poisson_homosexual,
-                                         row = c( 1, 6, 10 ), 
+                                         row = c( 1, 6, 10, 13 ), 
                                          which = "background",
                                          gp = gpar( fill = "white" )
 )
 
 p_imp_pr_poisson_homosexual <- edit_plot( p_imp_pr_poisson_homosexual,
-                                         row = c( 2:5, 7:9, 11, 12 ), 
+                                         row = c( 2:5, 7:9, 11, 12, 14, 15 ), 
                                          which = "background",
                                          gp = gpar( fill = "#eff3f2" )
 )
@@ -3533,6 +3557,7 @@ p_imp_pr_poisson_homosexual <- add_border(
 )
 
 plot( p_imp_pr_poisson_homosexual )
+ggsave( "Final_plots/p_imp_pr_homosexual_part_2.svg", plot = p_imp_pr_poisson_homosexual, width = 10.8, height = 7.4 )
 ```
 
 #### 3.4. Bisexual group
@@ -3709,6 +3734,7 @@ p_imp_pr_poisson_bisexual <- add_border(
 )
 
 plot( p_imp_pr_poisson_bisexual )
+ggsave( "Final_plots/p_imp_pr_bisexual_part_1.svg", plot = p_imp_pr_poisson_bisexual, width = 10.8, height = 8.5 )
 ```
 
 ##### 3.4.2. Part 2
@@ -3881,6 +3907,7 @@ p_imp_pr_poisson_bisexual <- add_border(
 )
 
 plot( p_imp_pr_poisson_bisexual )
+ggsave( "Final_plots/p_imp_pr_bisexual_part_2.svg", plot = p_imp_pr_poisson_bisexual, width = 10.8, height = 6.8 )
 ```
 
 #### 3.5. Other group
@@ -4833,6 +4860,7 @@ p_imp_pr_poisson_bisexual <- add_border(
 )
 
 plot( p_imp_pr_poisson_bisexual )
+ggsave( "Final_plots/p_imp_pr_bisexual_age_sex.svg", plot = p_imp_pr_poisson_bisexual, width = 10.4, height = 5.8 )
 ```
 
 ##### 3.6.5. Other group

@@ -19,15 +19,16 @@ library(ggplot2)
 library(ggbreak)
 library(naniar)
 library(ggh4x)
+library(here)
 ```
 
 ### 2. Plots for Proportion of Sexual Identity
 #### 2.1. Prepare dataset for plotting
 ```{r}
 # datasets for proportion of sexual identity
-prop_cc_summary_2010 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_cc_summary_2010.xlsx")
-prop_cc_summary_2014 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_cc_summary_2014.xlsx")
-prop_cc_summary_2021 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_cc_summary_2021.xlsx")
+prop_cc_summary_2010 <- read_excel(here("prop_cc_summary_2010.xlsx"))
+prop_cc_summary_2014 <- read_excel(here("prop_cc_summary_2014.xlsx"))
+prop_cc_summary_2021 <- read_excel(here("prop_cc_summary_2021.xlsx"))
 
 prop_cc_summary_2010 <- prop_cc_summary_2010 %>% slice( -c( 7:16 ) )
 prop_cc_summary_2014 <- prop_cc_summary_2014 %>% slice( -c( 7:18 ) )
@@ -1662,9 +1663,9 @@ plot( p_cc_age_sex )
 #### 2.7. By generation and sex
 ```{r}
 # datasets for proportion of sexual identity
-prop_cc_summary_2010_generation <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_cc_summary_2010.xlsx")
-prop_cc_summary_2014_generation <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_cc_summary_2014.xlsx")
-prop_cc_summary_2021_generation <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_cc_summary_2021.xlsx")
+prop_cc_summary_2010_generation <- read_excel(here("prop_cc_summary_2010.xlsx"))
+prop_cc_summary_2014_generation <- read_excel(here("prop_cc_summary_2014.xlsx"))
+prop_cc_summary_2021_generation <- read_excel(here("prop_cc_summary_2021.xlsx"))
 
 prop_cc_summary_2010_generation <- prop_cc_summary_2010_generation %>% slice( 7:16 )
 prop_cc_summary_2014_generation <- prop_cc_summary_2014_generation %>% slice( 7:18 )
@@ -1752,7 +1753,7 @@ ggplot( drop_na( long_data_generation ),
 #### 2.8. Proportion and proportion ratio by varing age cut-offs
 ##### 2.8.1. Prepare dataset for plotting
 ```{r}
-prop_cc_age_iteration_2010 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_cc_age_iteration_2010.xlsx") %>%
+prop_cc_age_iteration_2010 <- read_excel(here("prop_cc_age_iteration_2010.xlsx")) %>%
   select( "cut_off", "Heterosexual_young", "Homosexual_young", "Bisexual_young", "Uncertain_young", "Heterosexual_pr_2010", "Homosexual_pr_2010", "Bisexual_pr_2010", "Uncertain_pr_2010" ) %>%
   rename( 
     Heterosexual_prop_2010 = Heterosexual_young,
@@ -1762,7 +1763,7 @@ prop_cc_age_iteration_2010 <- read_excel("/Users/guoqiang.zhang/Library/CloudSto
     Other_pr_2010 = Uncertain_pr_2010
     )
 
-prop_cc_age_iteration_2014 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_cc_age_iteration_2014.xlsx") %>%
+prop_cc_age_iteration_2014 <- read_excel(here("prop_cc_age_iteration_2014.xlsx")) %>%
   select( "cut_off", "Heterosexual_young", "Homosexual_young", "Bisexual_young", "None of the above_young", "Heterosexual_pr_2014", "Homosexual_pr_2014", "Bisexual_pr_2014", "None of the above_pr_2014" ) %>%
   rename( 
     Heterosexual_prop_2014 = Heterosexual_young,
@@ -1772,7 +1773,7 @@ prop_cc_age_iteration_2014 <- read_excel("/Users/guoqiang.zhang/Library/CloudSto
     Other_pr_2014 = `None of the above_pr_2014`
     )
 
-prop_cc_age_iteration_2021 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_cc_age_iteration_2021.xlsx") %>%
+prop_cc_age_iteration_2021 <- read_excel(here("prop_cc_age_iteration_2021.xlsx")) %>%
   select( "cut_off", "Heterosexual_young", "Homosexual_young", "Bisexual_young", "None of the above_young", "Heterosexual_pr_2021", "Homosexual_pr_2021", "Bisexual_pr_2021", "None of the above_pr_2021" ) %>%
   rename( 
     Heterosexual_prop_2021 = Heterosexual_young,
@@ -1889,15 +1890,15 @@ ggplot( long_data[ long_data$Age_Group == "pr", ],
 #### 2.9. By age group and sex
 ##### 2.9.1. Prepare dataset for plotting
 ```{r}
-prop_cc_age_group_2010 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_cc_age_group_sex_2010.xlsx") %>%
+prop_cc_age_group_2010 <- read_xlsx(here("prop_cc_age_group_sex_2010.xlsx")) %>%
   select( "subgroup", "Heterosexual_point_estimate_2010", "Homosexual_point_estimate_2010", "Bisexual_point_estimate_2010", "Uncertain_point_estimate_2010" ) %>%
   rename( Other_point_estimate_2010 = Uncertain_point_estimate_2010 )
 
-prop_cc_age_group_2014 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_cc_age_group_sex_2014.xlsx") %>%
+prop_cc_age_group_2014 <- read_xlsx(here("prop_cc_age_group_sex_2014.xlsx")) %>%
   select( "subgroup", "Heterosexual_point_estimate_2014", "Homosexual_point_estimate_2014", "Bisexual_point_estimate_2014", "None of the above_point_estimate_2014" ) %>%
   rename( Other_point_estimate_2014 = `None of the above_point_estimate_2014` )
 
-prop_cc_age_group_2021 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/prop_cc_age_group_sex_2021.xlsx") %>%
+prop_cc_age_group_2021 <- read_xlsx(here("prop_cc_age_group_sex_2021.xlsx")) %>%
   select( "subgroup", "Heterosexual_point_estimate_2021", "Homosexual_point_estimate_2021", "Bisexual_point_estimate_2021", "None of the above_point_estimate_2021" ) %>%
   rename( Other_point_estimate_2021 = `None of the above_point_estimate_2021` )
 
@@ -2043,11 +2044,11 @@ ggplot( long_data_age_group %>%
 ### 3. Plots for Relation between Sexual Identity and Demographic Factors
 #### 3.1. Prepare dataset for plotting
 ```{r}
-results_cc_pr_poisson_2010 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/results_cc_pr_poisson_2010.xlsx")
+results_cc_pr_poisson_2010 <- read_xlsx(here("results_cc_pr_poisson_2010.xlsx"))
 
-results_cc_pr_poisson_2014 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/results_cc_pr_poisson_2014.xlsx")
+results_cc_pr_poisson_2014 <- read_xlsx(here("results_cc_pr_poisson_2014.xlsx"))
 
-results_cc_pr_poisson_2021 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/results_cc_pr_poisson_2021.xlsx")
+results_cc_pr_poisson_2021 <- read_xlsx(here("results_cc_pr_poisson_2021.xlsx"))
 
 colnames(results_cc_pr_poisson_2010)[-1] <- paste0(colnames(results_cc_pr_poisson_2010)[-1], "_2010")
 colnames(results_cc_pr_poisson_2014)[-1] <- paste0(colnames(results_cc_pr_poisson_2014)[-1], "_2014")
@@ -6020,6 +6021,7 @@ p_cc_pr_poisson_homosexual <- add_border(
 )
 
 plot( p_cc_pr_poisson_homosexual )
+ggsave( "Final_plots/p_cc_pr_homosexual_income.svg", plot = p_cc_pr_poisson_homosexual, width = 10.7, height = 5.8 )
 ```
 
 ##### 3.8.4. Bisexual group
@@ -6193,6 +6195,7 @@ p_cc_pr_poisson_bisexual <- add_border(
 )
 
 plot( p_cc_pr_poisson_bisexual )
+ggsave( "Final_plots/p_cc_pr_bisexual_income.svg", plot = p_cc_pr_poisson_bisexual, width = 10.7, height = 5.8 )
 ```
 
 ##### 3.8.5. Other group
@@ -6371,7 +6374,7 @@ plot( p_cc_pr_poisson_other )
 #### 3.9. Compare across models
 ##### 3.9.1. SPHC-B 2010
 ```{r}
-results_cc_pr_all_models_2010 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/results_cc_pr_all_models_2010.xlsx")
+results_cc_pr_all_models_2010 <- read_xlsx(here("results_cc_pr_all_models_2010.xlsx"))
 
 results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "sex_expFemale" ] <- "Sex: Female"
 results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp18-29" ] <- "Age: 18–29 yrs"
@@ -6485,7 +6488,7 @@ ggplot( long_data_2010,
 
 ##### 3.9.2. SPHC-B 2014
 ```{r}
-results_cc_pr_all_models_2014 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/results_cc_pr_all_models_2014.xlsx")
+results_cc_pr_all_models_2014 <- read_xlsx(here("results_cc_pr_all_models_2014.xlsx"))
 
 results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "sex_expFemale" ] <- "Sex: Female"
 results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "age_exp16-29" ] <- "Age: 16–29 yrs"
@@ -6600,7 +6603,7 @@ ggplot( long_data_2014,
 
 ##### 3.9.3. SPHC-B 2021
 ```{r}
-results_cc_pr_all_models_2021 <- read_xlsx("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Population Trends and Individual Fluidity of Sexual Identity in Stockholm County/Original Research/Temporal-Trends-in-Sexual-Identity-and-Sociodemographic-Disparities-in-Stockholm-County-2010-to-2021/results_cc_pr_all_models_2021.xlsx")
+results_cc_pr_all_models_2021 <- read_xlsx(here("results_cc_pr_all_models_2021.xlsx"))
 
 results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "sex_expFemale" ] <- "Sex: Female"
 results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "age_exp16-29" ] <- "Age: 16–29 yrs"
