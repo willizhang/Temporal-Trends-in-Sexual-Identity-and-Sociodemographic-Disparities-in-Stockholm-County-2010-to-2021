@@ -1,6 +1,6 @@
 ### This repository contains the R scripts for:
 
-Willi Zhang, Per Tynelius, Maya B. Mathur, Matteo Quartagno, Gunnar Brandén, Fredrik Liljeros, Kyriaki Kosidou. **Temporal Trends in Sexual Identity and Sociodemographic Disparities in Stockholm, Sweden, 2010-2021.** 2025. _American Journal of Public Health. In Press._
+Willi Zhang, Per Tynelius, Maya B. Mathur, Matteo Quartagno, Gunnar Brandén, Fredrik Liljeros, Kyriaki Kosidou. **Temporal Trends in Sexual Identity and Sociodemographic Disparities in Stockholm, Sweden, 2010-2021.** 2025. _American Journal of Public Health._ Available at https://doi.org/10.2105/AJPH.2025.308202.
 
 The R scripts include:
 * **SPHC-B-2010.Rmd:** analyses of sexual identity using SPHC-B 2010 dataset.
